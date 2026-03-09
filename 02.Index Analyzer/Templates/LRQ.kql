@@ -1,0 +1,149 @@
+let ObjectNameAndClientLRQCount= (
+traces
+| where timestamp > ago(30d) //Can be changed
+| where customDimensions.eventId == "RT0005"
+| extend sqlStatement = tostring(customDimensions.sqlStatement)
+| extend tablename = replace_string(tostring( extract_all("\"SQLDATABASE\"\\.dbo\\.\"CURRENTCOMPANY(\\$.+?)\\$\\S+?\"", sqlStatement)[0]),"$","")
+| where tablename != "" //no blank tablename
+| extend operationType = case(
+    sqlStatement startswith "UPDATE", "UPDATE"
+    , sqlStatement startswith "DELETE", "DELETE"
+    , sqlStatement startswith "BeginTransaction", "BEGIN_TRANS"
+    , sqlStatement matches regex "INSERT INTO", "INSERT"
+    , sqlStatement startswith "SELECT", "SELECT"
+    , sqlStatement matches regex "IF EXISTS \\(SELECT (.*)\\) SELECT", "SELECT'"
+    , sqlStatement has "SELECT NEXT VALUE FOR", "SELECT_SEQUENCE_VALUE"
+    , sqlStatement has "SELECT @@SPID", "SELECT_SPID"
+    , sqlStatement matches regex "(.*)WITH", "SELECT"
+    , sqlStatement startswith "CREATE TABLE", "CREATE_TABLE"
+    , sqlStatement startswith "ALTER TABLE", "ALTER_TABLE"
+    , sqlStatement startswith "exec sp_rename", "RENAME_TABLE"
+    , sqlStatement matches regex "(.*)DROP TABLE", "DROP_TABLE"
+    , sqlStatement startswith "SET LOCK_TIMEOUT", "SET_LOCK_TIMEOUT"
+    , sqlStatement has "sp_getapplock", "GET_APP_LOCK"
+    , "UNKNOWN"
+)
+| where operationType == "SELECT" //Only Select
+| extend executionTimeInMS = toreal(totimespan(customDimensions.executionTime))/10000
+, withUPDLOCK = iff(customDimensions.sqlStatement has 'UPDLOCK','Yes', 'No')
+, numberOfFlowFields = countof(sqlStatement, "OUTER APPLY")
+, isolationLevel = tostring(case(
+    sqlStatement has 'WITH(UPDLOCK)', 'UPDLOCK'
+  , sqlStatement has 'WITH(READUNCOMMITTED)', 'ReadUncommitted'
+  , sqlStatement has 'WITH(READCOMMITTED)', 'ReadCommitted'
+  , sqlStatement has 'WITH(REPEATABLEREAD)', 'RepeatableRead'
+  , 'Default'
+))
+| project timestamp,
+    ["Duration"] = executionTimeInMS,
+    ["FlowFields"] = numberOfFlowFields,
+    ["with UPDLOCK"] = withUPDLOCK,
+    ["Isolation Level"] = isolationLevel,
+    ["SQL Statement"] = sqlStatement,
+    tablename
+| summarize count(), avgDuration = round(avg(Duration),0), totalDuration =  round(sum(Duration),0)
+    by ['SQL Statement'], tablename, ['Isolation Level'], FlowFields
+);
+ObjectNameAndClientLRQCount
+| extend Percentage = round(totalDuration *100 / toscalar(ObjectNameAndClientLRQCount | summarize sum(totalDuration)),2)
+| extend Percentage = toint(round(Percentage * 100,0))
+// Extract the MAIN WHERE clause only (last WHERE before ORDER BY, excluding subquery WHEREs)
+| extend mainWhereClause = extract(@"\)\s+WHERE\s+\(?\(?(.*?)\)?\s*ORDER\s+BY", 1, ['SQL Statement'])
+// If no match, try simpler pattern
+| extend mainWhereClause = iff(isempty(mainWhereClause), extract(@"WHERE\s+\(?\(?(.*?)\)?\s*ORDER\s+BY", 1, ['SQL Statement']), mainWhereClause)
+// Split by AND and OR to get individual conditions
+| extend conditions = split(replace_regex(replace_regex(mainWhereClause, @"\s+AND\s+", "|||"), @"\s+OR\s+", "|||"), "|||")
+| mv-expand condition = conditions to typeof(string)
+// Extract field name - handle COLLATE keyword between field and operator
+// Pattern: "alias"."FieldName" [COLLATE ...] operator
+| extend fieldName = extract(@'"[^"]+"\."([^"]+)"\s*(?:COLLATE\s+\S+\s*)?(?:=|<>|!=|<=|>=|<|>|LIKE|NOT\s+LIKE)', 1, condition)
+// Extract operator (accounting for COLLATE)
+| extend operator = extract(@'"[^"]+"\."[^"]+"\s*(?:COLLATE\s+\S+\s*)?(=|<>|!=|<=|>=|<|>|LIKE|NOT\s+LIKE)', 1, condition)
+| where isnotempty(fieldName) and isnotempty(operator)
+// Classify: = is equality, everything else (LIKE, <>, !=, <, >, <=, >=) is inequality
+| extend isEquality = (operator == "=")
+// Aggregate back
+| summarize equalityFields = make_set_if(fieldName, isEquality),
+    inequalityFields = make_set_if(fieldName, not(isEquality))
+    by
+    ['SQL Statement'], FlowFields, tablename, ['Isolation Level']
+    , count_, avgDuration, totalDuration, Percentage
+| where count_ > 9 //More than at least 9 occurrance
+| sort by totalDuration desc
+// Complete KQL SQL Prettifier for BC Queries
+| extend PrettifiedSQL = replace_strings(
+    ['SQL Statement'],
+    dynamic([
+        // Main clauses - order matters!
+        "SELECT  TOP",
+        "SELECT TOP",
+        "SELECT ",
+        " FROM ",
+        ">FROM ",
+        " WHERE ",
+        " ORDER BY ",
+        " GROUP BY ",
+        " HAVING ",
+        // Joins
+        " JOIN ",
+        " LEFT JOIN ",
+        " RIGHT JOIN ",
+        " INNER JOIN ",
+        " ON (",
+        // OUTER APPLY - no extra spaces between consecutive ones
+        ")) AS \"SUB$",
+        " OUTER APPLY",
+        // Hints and options
+        " WITH(READUNCOMMITTED)",
+        " WITH(UPDLOCK)",
+        " WITH(READUNCOMMITTED,NOEXPAND)",
+        " OPTION(FAST 50)",
+        " OPTION(FAST ",
+        // Boolean operators
+        " AND ",
+        " OR ",
+        // ISNULL functions - keep on same line
+        ",ISNULL(",
+        // Column separators in SELECT
+        ",\"\""
+    ]),
+    dynamic([
+        // Main clauses
+        "SELECT TOP\n",
+        "SELECT TOP\n",
+        "\nSELECT\n       ",
+        "\n FROM ",
+        "\n FROM ",
+        "\nWHERE ",
+        "\nORDER BY ",
+        "\nGROUP BY ",
+        "\nHAVING ",
+        // Joins
+        "\nJOIN ",
+        "\nLEFT JOIN ",
+        "\nRIGHT JOIN ",
+        "\nINNER JOIN ",
+        "\n  ON (",
+        // OUTER APPLY - closes and opens on new line, no blank lines
+        "))\n  AS \"SUB$",
+        "\nOUTER APPLY\n ",
+        // Hints
+        "\n  WITH(READUNCOMMITTED)",
+        "\n  WITH(UPDLOCK)",
+        "\n  WITH(READUNCOMMITTED,NOEXPAND)",
+        "\nOPTION(FAST 50)",
+        "\nOPTION(FAST ",
+        // Boolean operators
+        "\n      AND ",
+        "\n      OR ",
+        // ISNULL
+        ",\n       ISNULL(",
+        // Column separators
+        ",\n       \"\""
+    ])
+)
+| project sqlStatement = ['SQL Statement'], tablename, isolationLevel = ['Isolation Level'], flowFields = FlowFields, occurrence = count_, avgDuration, totalDuration, percentage = Percentage, equalityFields, inequalityFields, PrettifiedSQL
+
+
+
+

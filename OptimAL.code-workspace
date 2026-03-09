@@ -1,0 +1,31 @@
+{
+  "folders": [
+    {
+      "name": "AL Profiling",
+      "path": "01.AL Profiling"
+    },
+    {
+      "name": "Index Analyzer",
+      "path": "02.Index Analyzer"
+    },
+    {
+      "name": "ISV Telemetry Sample",
+      "path": "03.ISVTelemetrySample"
+    }
+  ],
+  "settings": {
+    "al.enableCodeAnalysis": true,
+    "al.codeAnalyzers": [
+      "${CodeCop}",
+      "${UICop}",
+      "${PerTenantExtensionCop}"
+    ],
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-dynamics-smb.al"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "ISV Telemetry Sample",
+  "publisher": "DT",
+  "version": "1.0.0.0",
+  "brief": "Demonstrates all extension telemetry signals that can be emitted to Application Insights",
+  "description": "This app demonstrates each telemetry signal emitted in extension telemetry (RT0030, RT0010, AL0000EJ9, AL0000EJA, RT0018, RT0005, CL0001, RT0006, RT0007, RT0011, AL0000N0E, AL0000N0H, AL0000N0I, AL0000N0F, AL0000N0G, LC0025, RT0008, RT0053, RT0019, and more)",
+  "privacyStatement": "https://example.com/privacy",
+  "EULA": "https://example.com/eula",
+  "help": "https://example.com/help",
+  "url": "https://example.com",
+  "logo": "",
+  "dependencies": [],
+  "screenshots": [],
+  "platform": "27.0.0.0",
+  "application": "27.0.0.0",
+  "idRanges": [
+    {
+      "from": 50100,
+      "to": 50199
+    }
+  ],
+  "resourceExposurePolicy": {
+    "allowDebugging": true,
+    "allowDownloadingSource": true,
+    "includeSourceInSymbolFile": true
+  },
+  "runtime": "16.0",
+  "target": "Cloud",
+  "applicationInsightsConnectionString": "InstrumentationKey=2e202530-29b7-4786-b917-a89bee3f5aa2;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=2a9e6a8e-3eaa-43b7-8021-3bd5799a48db"
+}
