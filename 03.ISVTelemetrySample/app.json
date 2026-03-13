@@ -26,6 +26,5 @@
     "includeSourceInSymbolFile": true
   },
   "runtime": "16.0",
-  "target": "Cloud",
-  "applicationInsightsConnectionString": "InstrumentationKey=2e202530-29b7-4786-b917-a89bee3f5aa2;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=2a9e6a8e-3eaa-43b7-8021-3bd5799a48db"
+  "target": "Cloud"
 }
