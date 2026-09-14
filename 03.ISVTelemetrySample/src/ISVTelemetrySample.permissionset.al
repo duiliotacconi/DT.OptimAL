@@ -2,7 +2,7 @@ namespace DT.ISVTelemetrySample;
 
 using DT.ISVTelemetrySample;
 
-permissionset 50100 ISVTelemetrySample
+permissionset 50194 ISVTelemetrySample
 {
     Assignable = true;
     Permissions = tabledata "Telemetry Demo Setup"=RIMD,
