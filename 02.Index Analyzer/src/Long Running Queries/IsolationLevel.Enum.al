@@ -1,6 +1,6 @@
 namespace DefaultNamespace;
 
-enum 50920 "Isolation Level"
+enum 50920 "DTC Isolation Level"
 {
     Extensible = true;
     Caption = 'Isolation Level';

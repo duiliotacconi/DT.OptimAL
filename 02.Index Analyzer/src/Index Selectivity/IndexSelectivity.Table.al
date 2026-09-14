@@ -1,6 +1,6 @@
 namespace DefaultNamespace;
 
-table 50912 "Index Selectivity"
+table 50912 "DTC Index Selectivity"
 {
     DataClassification = SystemMetadata;
     Caption = 'Index Selectivity';
@@ -17,7 +17,7 @@ table 50912 "Index Selectivity"
         {
             DataClassification = SystemMetadata;
             Caption = 'Index Entry No.';
-            TableRelation = "Index Entry"."Entry No.";
+            TableRelation = "DTC Index Entry"."Entry No.";
         }
         field(3; "Table ID"; Integer)
         {
@@ -34,7 +34,7 @@ table 50912 "Index Selectivity"
             DataClassification = SystemMetadata;
             Caption = 'Key Index';
         }
-        field(6; "Source Type"; Enum "Index Source Type")
+        field(6; "Source Type"; Enum "DTC Index Source Type")
         {
             DataClassification = SystemMetadata;
             Caption = 'Source Type';
@@ -43,7 +43,7 @@ table 50912 "Index Selectivity"
         {
             DataClassification = SystemMetadata;
             Caption = 'Missing Index Entry No.';
-            TableRelation = "Missing Index"."Entry No.";
+            TableRelation = "DTC Missing Index"."Entry No.";
         }
         field(8; "Suggested Key Fields"; Text[1000])
         {
@@ -51,7 +51,7 @@ table 50912 "Index Selectivity"
             Caption = 'Suggested Key Fields';
             Description = 'Fields ordered by selectivity (most selective first)';
         }
-        field(10; "Selectivity Type"; Enum "Selectivity Type")
+        field(10; "Selectivity Type"; Enum "DTC Selectivity Type")
         {
             DataClassification = SystemMetadata;
             Caption = 'Selectivity Type';

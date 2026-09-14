@@ -1,6 +1,6 @@
 namespace DefaultNamespace;
 
-table 50913 "Index Detail"
+table 50913 "DTC Index Detail"
 {
     DataClassification = SystemMetadata;
     Caption = 'Index Detail';
@@ -17,9 +17,9 @@ table 50913 "Index Detail"
         {
             DataClassification = SystemMetadata;
             Caption = 'Index Entry No.';
-            TableRelation = "Index Entry"."Entry No.";
+            TableRelation = "DTC Index Entry"."Entry No.";
         }
-        field(3; "Selectivity Type"; Enum "Selectivity Type")
+        field(3; "Selectivity Type"; Enum "DTC Selectivity Type")
         {
             DataClassification = SystemMetadata;
             Caption = 'Selectivity Type';

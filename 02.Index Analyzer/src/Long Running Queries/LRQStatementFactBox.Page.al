@@ -1,35 +1,42 @@
 namespace DefaultNamespace;
 
-page 50922 "LRQ Statement FactBox"
+page 50922 "DTC LRQ Statement FactBox"
 {
     PageType = CardPart;
     ApplicationArea = All;
-    SourceTable = "LRQ Entry";
+    SourceTable = "DTC LRQ Entry";
     Caption = 'SQL Statement';
 
     layout
     {
         area(Content)
         {
-            field(SQLStatementText; SQLStatementText)
+            usercontrol(SqlViewer; "DTC SQL Viewer")
             {
                 ApplicationArea = All;
-                Caption = 'SQL Statement';
-                ToolTip = 'Specifies the SQL statement.';
-                MultiLine = true;
-                Editable = false;
+
+                trigger ControlReady()
+                begin
+                    IsControlReady := true;
+                    PushSQL();
+                end;
             }
         }
     }
 
     var
         SQLStatementText: Text;
+        IsControlReady: Boolean;
 
     trigger OnAfterGetRecord()
     begin
         SQLStatementText := Rec.GetSQLStatement();
-        // Truncate for FactBox display - full statement available in Card view
-        if StrLen(SQLStatementText) > 2000 then
-            SQLStatementText := CopyStr(SQLStatementText, 1, 2000) + '...';
+        PushSQL();
+    end;
+
+    local procedure PushSQL()
+    begin
+        if IsControlReady then
+            CurrPage.SqlViewer.SetSQL(SQLStatementText);
     end;
 }

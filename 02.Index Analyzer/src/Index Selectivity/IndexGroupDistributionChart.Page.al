@@ -3,7 +3,7 @@ namespace DefaultNamespace;
 using System.Integration;
 using System.Visualization;
 
-page 50915 "Index Group Distribution Chart"
+page 50915 "DTC Index Group Distr. Chart"
 {
     Caption = 'Index Group Distribution';
     PageType = CardPart;
@@ -32,12 +32,12 @@ page 50915 "Index Group Distribution Chart"
 
     var
         IndexEntryNo: Integer;
-        SelectivityTypeFilter: Enum "Selectivity Type";
+        SelectivityTypeFilter: Enum "DTC Selectivity Type";
         FieldNoFilter: Integer;
         IsChartAddInReady: Boolean;
         HasFilters: Boolean;
 
-    procedure SetIndexDetail(EntryNo: Integer; SelType: Enum "Selectivity Type"; FieldNo: Integer)
+    procedure SetIndexDetail(EntryNo: Integer; SelType: Enum "DTC Selectivity Type"; FieldNo: Integer)
     begin
         IndexEntryNo := EntryNo;
         SelectivityTypeFilter := SelType;
@@ -49,7 +49,7 @@ page 50915 "Index Group Distribution Chart"
 
     local procedure UpdateChart()
     var
-        IndexDetail: Record "Index Detail";
+        IndexDetail: Record "DTC Index Detail";
         BusChart: Codeunit "Business Chart";
         NoOfGroupsLbl: Label 'No. of Groups';
         BucketLbl: Label 'Bucket';

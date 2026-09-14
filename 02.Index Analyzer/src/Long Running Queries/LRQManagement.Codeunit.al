@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Utilities;
 
-codeunit 50920 "LRQ Management"
+codeunit 50920 "DTC LRQ Management"
 {
     /// <summary>
     /// Main entry point for importing LRQ data and populating all related tables.
@@ -12,12 +12,12 @@ codeunit 50920 "LRQ Management"
     /// </summary>
     procedure ImportLRQAndPopulateAll()
     var
-        LRQEntry: Record "LRQ Entry";
-        LRQFlowFieldEntry: Record "LRQ FlowField Entry";
-        TableIndex: Record "Table Index";
-        IndexEntry: Record "Index Entry";
-        VSIFTEntry: Record "VSIFT Entry";
-        VSIFTDetail: Record "VSIFT Detail";
+        LRQEntry: Record "DTC LRQ Entry";
+        LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry";
+        TableIndex: Record "DTC Table Index";
+        IndexEntry: Record "DTC Index Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
+        VSIFTDetail: Record "DTC VSIFT Detail";
         SelectionChoice: Integer;
         DeleteAllLbl: Label 'Delete all and start fresh';
         ContinueLbl: Label 'Continue (keep existing data)';
@@ -79,7 +79,7 @@ codeunit 50920 "LRQ Management"
     procedure ImportFromExcel(): Integer
     var
         TempExcelBuffer: Record "Excel Buffer" temporary;
-        LRQEntry: Record "LRQ Entry";
+        LRQEntry: Record "DTC LRQ Entry";
         ColumnMap: Dictionary of [Text, Integer];
         InStr: InStream;
         FileName: Text;
@@ -87,7 +87,7 @@ codeunit 50920 "LRQ Management"
         RowNo: Integer;
         TotalRows: Integer;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Importing Long Running Queries...\Row: #1#### of #2####';
+        ProgressMsg: Label 'Importing Long Running Queries...\Row: #1#### of #2####', Comment = '#1 = Current row, #2 = Total rows';
         NoDataErr: Label 'No data found in the Excel file.';
         SelectFileLbl: Label 'Select Long Running Queries Excel file';
     begin
@@ -154,15 +154,15 @@ codeunit 50920 "LRQ Management"
     /// </summary>
     local procedure PopulateIndexDataFromLRQ(): Integer
     var
-        LRQEntry: Record "LRQ Entry";
-        TableIndex: Record "Table Index";
-        IndexEntry: Record "Index Entry";
+        LRQEntry: Record "DTC LRQ Entry";
+        TableIndex: Record "DTC Table Index";
+        IndexEntry: Record "DTC Index Entry";
         TableMetadata: Record "Table Metadata";
         KeyMetadata: Record "Key";
         AllObj: Record AllObjWithCaption;
         ProcessedTables: List of [Integer];
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Processing Index Data from LRQ...\Table: #1######## #2##############################';
+        ProgressMsg: Label 'Processing Index Data from LRQ...\Table: #1######## #2##############################', Comment = '#1 = Table ID, #2 = Table name';
         RecordCount: Integer;
         IndexCount: Integer;
         VSIFTCount: Integer;
@@ -259,12 +259,12 @@ codeunit 50920 "LRQ Management"
     /// </summary>
     local procedure PopulateVSIFTDataFromLRQ(): Integer
     var
-        LRQEntry: Record "LRQ Entry";
-        VSIFTEntry: Record "VSIFT Entry";
-        VSIFTMgt: Codeunit "VSIFT Management";
+        LRQEntry: Record "DTC LRQ Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
+        VSIFTMgt: Codeunit "DTC VSIFT Management";
         ProcessedTables: List of [Integer];
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Processing VSIFT Data from LRQ...\Table: #1########';
+        ProgressMsg: Label 'Processing VSIFT Data from LRQ...\Table: #1########', Comment = '#1 = Table ID';
         TableID: Integer;
         TablesProcessed: Integer;
     begin
@@ -329,7 +329,7 @@ codeunit 50920 "LRQ Management"
         RecRef.Close();
     end;
 
-    local procedure CreateTableIndex(var TableIndex: Record "Table Index"; TableID: Integer; TableName: Text[250]; IndexCount: Integer; VSIFTCount: Integer; IncludedCount: Integer; SIFTFieldsCount: Integer; RecordCount: Integer)
+    local procedure CreateTableIndex(var TableIndex: Record "DTC Table Index"; TableID: Integer; TableName: Text[250]; IndexCount: Integer; VSIFTCount: Integer; IncludedCount: Integer; SIFTFieldsCount: Integer; RecordCount: Integer)
     begin
         Clear(TableIndex);
         TableIndex.Init();
@@ -343,7 +343,7 @@ codeunit 50920 "LRQ Management"
         TableIndex.Insert(true);
     end;
 
-    local procedure CreateIndexEntry(var IndexEntry: Record "Index Entry"; KeyMetadata: Record "Key"; TableName: Text[250]; RecordCount: Integer)
+    local procedure CreateIndexEntry(var IndexEntry: Record "DTC Index Entry"; KeyMetadata: Record "Key"; TableName: Text[250]; RecordCount: Integer)
     var
         IncludedColumns: Text;
     begin
@@ -352,6 +352,7 @@ codeunit 50920 "LRQ Management"
         IndexEntry."Table ID" := KeyMetadata.TableNo;
         IndexEntry."Table Name" := TableName;
         IndexEntry."Key Index" := KeyMetadata."No.";
+        IndexEntry."AL Key Name" := CopyStr(KeyMetadata."Key name", 1, 250);
 
         // Key Fields
         IndexEntry."Key Fields" := CopyStr(KeyMetadata."Key", 1, 500);
@@ -401,13 +402,12 @@ codeunit 50920 "LRQ Management"
         ParseFieldListToList(KeyMetadata.SQLIndex, SQLFields);
 
         // Find fields in SQLIndex that are not in Key
-        foreach SQLField in SQLFields do begin
+        foreach SQLField in SQLFields do
             if not KeyFields.Contains(SQLField) then begin
                 if IncludedColumns <> '' then
                     IncludedColumns += ', ';
                 IncludedColumns += SQLField;
             end;
-        end;
 
         exit(IncludedColumns);
     end;
@@ -449,15 +449,13 @@ codeunit 50920 "LRQ Management"
             exit('');
 
         ParseFieldListToList(FieldNumbers, FieldNums);
-        foreach FieldNumText in FieldNums do begin
-            if Evaluate(FieldNum, FieldNumText) then begin
+        foreach FieldNumText in FieldNums do
+            if Evaluate(FieldNum, FieldNumText) then
                 if TryGetFieldRef(RecRef, FieldNum, FldRef) then begin
                     if FieldNames <> '' then
                         FieldNames += ', ';
                     FieldNames += FldRef.Name;
                 end;
-            end;
-        end;
 
         RecRef.Close();
         exit(FieldNames);
@@ -469,9 +467,9 @@ codeunit 50920 "LRQ Management"
         FldRef := RecRef.Field(FieldNo);
     end;
 
-    local procedure CreateLRQEntryFromExcelRow(var TempExcelBuffer: Record "Excel Buffer" temporary; var LRQEntry: Record "LRQ Entry"; RowNo: Integer; var ColumnMap: Dictionary of [Text, Integer])
+    local procedure CreateLRQEntryFromExcelRow(var TempExcelBuffer: Record "Excel Buffer" temporary; var LRQEntry: Record "DTC LRQ Entry"; RowNo: Integer; var ColumnMap: Dictionary of [Text, Integer])
     var
-        LRQSQLParser: Codeunit "LRQ SQL Parser";
+        LRQSQLParser: Codeunit "DTC LRQ SQL Parser";
         SQLStatement: Text;
         IsolationLevelText: Text;
         EqualityFieldsJson: Text;
@@ -586,19 +584,19 @@ codeunit 50920 "LRQ Management"
         exit('');
     end;
 
-    local procedure ParseIsolationLevel(IsolationLevelText: Text): Enum "Isolation Level"
+    local procedure ParseIsolationLevel(IsolationLevelText: Text): Enum "DTC Isolation Level"
     begin
         case UpperCase(DelChr(IsolationLevelText, '=', ' ')) of
             'UPDLOCK':
-                exit("Isolation Level"::UpdLock);
+                exit("DTC Isolation Level"::UpdLock);
             'READCOMMITTED':
-                exit("Isolation Level"::ReadCommitted);
+                exit("DTC Isolation Level"::ReadCommitted);
             'READUNCOMMITTED':
-                exit("Isolation Level"::ReadUncommitted);
+                exit("DTC Isolation Level"::ReadUncommitted);
             'REPEATABLEREAD':
-                exit("Isolation Level"::RepeatableRead);
+                exit("DTC Isolation Level"::RepeatableRead);
             else
-                exit("Isolation Level"::Default);
+                exit("DTC Isolation Level"::Default);
         end;
     end;
 
@@ -639,14 +637,15 @@ codeunit 50920 "LRQ Management"
                     InQuote := false;
                 end else
                     InQuote := true;
-            end else if InQuote then
+            end else
+                if InQuote then
                     FieldName += Format(c);
         end;
 
         exit(FieldList);
     end;
 
-    local procedure MatchTableName(var LRQEntry: Record "LRQ Entry"; SQLTableName: Text)
+    local procedure MatchTableName(var LRQEntry: Record "DTC LRQ Entry"; SQLTableName: Text)
     var
         AllObj: Record AllObjWithCaption;
         NormalizedSQLName: Text;
@@ -696,12 +695,10 @@ codeunit 50920 "LRQ Management"
     local procedure TransformFieldNames(TableID: Integer; SQLFieldList: Text): Text
     var
         RecRef: RecordRef;
-        FldRef: FieldRef;
         FieldList: List of [Text];
         ALFieldList: Text;
         SQLFieldName: Text;
         ALFieldName: Text;
-        i: Integer;
     begin
         if (TableID = 0) or (SQLFieldList = '') then
             exit(SQLFieldList);
@@ -808,10 +805,9 @@ codeunit 50920 "LRQ Management"
             exit(0);
 
         FieldCount := 1;
-        for i := 1 to StrLen(FieldList) do begin
+        for i := 1 to StrLen(FieldList) do
             if FieldList[i] = ',' then
                 FieldCount += 1;
-        end;
         exit(FieldCount);
     end;
 

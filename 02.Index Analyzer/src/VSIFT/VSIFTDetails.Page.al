@@ -1,10 +1,10 @@
 namespace DefaultNamespace;
 
-page 50901 "VSIFT Details"
+page 50901 "DTC VSIFT Details"
 {
     PageType = List;
     ApplicationArea = All;
-    SourceTable = "VSIFT Detail";
+    SourceTable = "DTC VSIFT Detail";
     Caption = 'VSIFT Details';
     Editable = false;
     InsertAllowed = false;
@@ -41,12 +41,12 @@ page 50901 "VSIFT Details"
                     ToolTip = 'Specifies the SIFT fields.';
                 }
             }
-            part(Chart; "VSIFT Detail Chart")
+            part(Chart; "DTC VSIFT Detail Chart")
             {
                 ApplicationArea = All;
                 Caption = 'Bucket Distribution';
             }
-            part(GroupChart; "VSIFT Group Distribution Chart")
+            part(GroupChart; "DTC VSIFT Group Distr. Chart")
             {
                 ApplicationArea = All;
                 Caption = 'Group Distribution';
@@ -92,7 +92,7 @@ page 50901 "VSIFT Details"
         CurrPage.GroupChart.Page.SetVSIFTEntry(VSIFTEntryNo);
     end;
 
-    procedure SetEntry(var VSIFTEntry: Record "VSIFT Entry")
+    procedure SetEntry(var VSIFTEntry: Record "DTC VSIFT Entry")
     begin
         TableName := VSIFTEntry."Table Name";
         KeyFields := VSIFTEntry."Key Fields";

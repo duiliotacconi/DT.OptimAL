@@ -3,7 +3,7 @@ namespace DefaultNamespace;
 using System.Integration;
 using System.Visualization;
 
-page 50904 "VSIFT Group Distribution Chart"
+page 50904 "DTC VSIFT Group Distr. Chart"
 {
     Caption = 'VSIFT Group Distribution';
     PageType = CardPart;
@@ -43,7 +43,7 @@ page 50904 "VSIFT Group Distribution Chart"
 
     local procedure UpdateChart()
     var
-        VSIFTDetail: Record "VSIFT Detail";
+        VSIFTDetail: Record "DTC VSIFT Detail";
         BusChart: Codeunit "Business Chart";
         NoOfGroupsLbl: Label 'No. of Groups';
         BucketLbl: Label 'Bucket';

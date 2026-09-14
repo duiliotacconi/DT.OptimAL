@@ -1,0 +1,99 @@
+{
+  "name": "BCIndexAnalyzer",
+  "description": "",
+  "enableDynamicToolMode": true,
+  "discoverReadOnlyObjects": false,
+  "allowProdChanges": false,
+  "tools": [
+    {
+      "objectType": "Page",
+      "objectId": 50932,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50933,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50934,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50935,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50936,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50937,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50938,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50939,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    },
+    {
+      "objectType": "Page",
+      "objectId": 50940,
+      "apiVersion": "v1.0",
+      "allowRead": true,
+      "allowCreate": false,
+      "allowModify": false,
+      "allowDelete": false,
+      "allowBoundActions": false
+    }
+  ]
+}

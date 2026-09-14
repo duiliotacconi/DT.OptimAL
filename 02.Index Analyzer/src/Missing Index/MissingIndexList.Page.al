@@ -1,11 +1,11 @@
 namespace DefaultNamespace;
 
-page 50925 "Missing Index List"
+page 50925 "DTC Missing Index List"
 {
     PageType = List;
     ApplicationArea = All;
     UsageCategory = Lists;
-    SourceTable = "Missing Index";
+    SourceTable = "DTC Missing Index";
     SourceTableView = sorting("Estimated Benefit") order(descending);
     Caption = 'Missing Index List';
     Editable = false;
@@ -128,6 +128,31 @@ page 50925 "Missing Index List"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Process)
+            {
+                Caption = 'Process';
+
+                actionref(ImportFromExcel_Promoted; ImportFromExcel)
+                {
+                }
+                actionref(CalculateSelectivity_Promoted; CalculateSelectivity)
+                {
+                }
+                actionref(ViewSelectivity_Promoted; ViewSelectivity)
+                {
+                }
+            }
+            group(Category_Navigate)
+            {
+                Caption = 'Navigate';
+
+                actionref(ShowTableIndexes_Promoted; ShowTableIndexes)
+                {
+                }
+            }
+        }
         area(Processing)
         {
             action(ImportFromExcel)
@@ -136,13 +161,10 @@ page 50925 "Missing Index List"
                 Caption = 'Import from Excel';
                 Image = ImportExcel;
                 ToolTip = 'Import missing indexes from an Excel file.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    MissingIndexMgt: Codeunit "Missing Index Management";
+                    MissingIndexMgt: Codeunit "DTC Missing Index Management";
                 begin
                     MissingIndexMgt.ImportFromExcel();
                     CurrPage.Update(false);
@@ -154,13 +176,11 @@ page 50925 "Missing Index List"
                 Caption = 'Show Table Indexes';
                 Image = Table;
                 ToolTip = 'Show the indexes for the related table.';
-                Promoted = true;
-                PromotedCategory = Category4;
 
                 trigger OnAction()
                 var
-                    IndexEntry: Record "Index Entry";
-                    IndexEntries: Page "Index Entries";
+                    IndexEntry: Record "DTC Index Entry";
+                    IndexEntries: Page "DTC Index Entries";
                 begin
                     IndexEntry.SetRange("Table ID", Rec."Table ID");
                     IndexEntries.SetTableView(IndexEntry);
@@ -173,14 +193,11 @@ page 50925 "Missing Index List"
                 Caption = 'Calculate Selectivity';
                 Image = CalculateCost;
                 ToolTip = 'Calculate selectivity for missing index fields to determine optimal field order.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    MissingIndex: Record "Missing Index";
-                    MissingIndexMgt: Codeunit "Missing Index Management";
+                    MissingIndex: Record "DTC Missing Index";
+                    MissingIndexMgt: Codeunit "DTC Missing Index Management";
                     SelectionChoice: Integer;
                     SelectedLbl: Label 'Calculate for selected missing index';
                     TableLbl: Label 'Calculate for all missing indexes in table %1 (%2)', Comment = '%1 = Table ID, %2 = Table Name';
@@ -224,15 +241,13 @@ page 50925 "Missing Index List"
                 Caption = 'View Selectivity';
                 Image = AnalysisView;
                 ToolTip = 'View selectivity details for this missing index.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    IndexSelectivity: Record "Index Selectivity";
-                    IndexSelectivityList: Page "Index Selectivity List";
+                    IndexSelectivity: Record "DTC Index Selectivity";
+                    IndexSelectivityList: Page "DTC Index Selectivity List";
                 begin
-                    IndexSelectivity.SetRange("Source Type", "Index Source Type"::"Missing Index");
+                    IndexSelectivity.SetRange("Source Type", "DTC Index Source Type"::"Missing Index");
                     IndexSelectivity.SetRange("Missing Index Entry No.", Rec."Entry No.");
                     IndexSelectivityList.SetTableView(IndexSelectivity);
                     IndexSelectivityList.SetMissingIndexEntry(Rec);
@@ -248,7 +263,7 @@ page 50925 "Missing Index List"
 
                 trigger OnAction()
                 var
-                    MissingIndex: Record "Missing Index";
+                    MissingIndex: Record "DTC Missing Index";
                 begin
                     if not Confirm('Are you sure you want to delete all missing index entries?') then
                         exit;

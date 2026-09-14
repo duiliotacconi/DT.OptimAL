@@ -1,10 +1,10 @@
 namespace DefaultNamespace;
 
-page 50902 "VSIFT Entry Card"
+page 50902 "DTC VSIFT Entry Card"
 {
     PageType = Card;
     ApplicationArea = All;
-    SourceTable = "VSIFT Entry";
+    SourceTable = "DTC VSIFT Entry";
     Caption = 'VSIFT Entry Card';
 
     layout
@@ -82,6 +82,17 @@ page 50902 "VSIFT Entry Card"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Process)
+            {
+                Caption = 'Process';
+
+                actionref(ViewDetails_Promoted; ViewDetails)
+                {
+                }
+            }
+        }
         area(Processing)
         {
             action(ViewDetails)
@@ -90,14 +101,11 @@ page 50902 "VSIFT Entry Card"
                 Caption = 'View Details';
                 Image = View;
                 ToolTip = 'View detailed VSIFT information for this entry.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    VSIFTDetail: Record "VSIFT Detail";
-                    VSIFTDetailsPage: Page "VSIFT Details";
+                    VSIFTDetail: Record "DTC VSIFT Detail";
+                    VSIFTDetailsPage: Page "DTC VSIFT Details";
                 begin
                     VSIFTDetail.SetRange("VSIFT Entry No.", Rec."Entry No.");
                     VSIFTDetailsPage.SetTableView(VSIFTDetail);

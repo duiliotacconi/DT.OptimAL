@@ -1,10 +1,10 @@
 namespace DefaultNamespace;
 
-page 50921 "LRQ Entry Card"
+page 50921 "DTC LRQ Entry Card"
 {
     PageType = Card;
     ApplicationArea = All;
-    SourceTable = "LRQ Entry";
+    SourceTable = "DTC LRQ Entry";
     Caption = 'Long Running Query Entry';
     Editable = false;
 
@@ -59,8 +59,8 @@ page 50921 "LRQ Entry Card"
 
                     trigger OnDrillDown()
                     var
-                        LRQFlowFieldEntry: Record "LRQ FlowField Entry";
-                        LRQFlowFieldEntries: Page "LRQ FlowField Entries";
+                        LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry";
+                        LRQFlowFieldEntries: Page "DTC LRQ FlowField Entries";
                     begin
                         LRQFlowFieldEntry.SetRange("LRQ Entry No.", Rec."Entry No.");
                         LRQFlowFieldEntries.SetTableView(LRQFlowFieldEntry);
@@ -130,19 +130,11 @@ page 50921 "LRQ Entry Card"
                     ToolTip = 'Specifies the aggregate function used (SUM, COUNT, MIN, etc.).';
                 }
             }
-            group(SQLStatement)
+            group(OriginalSQL)
             {
-                Caption = 'SQL Statement';
+                Caption = 'Original SQL';
+                Visible = false;
 
-                field(PrettifiedSQLText; PrettifiedSQLText)
-                {
-                    ApplicationArea = All;
-                    Caption = 'Formatted SQL';
-                    ToolTip = 'Specifies the prettified SQL statement for better readability.';
-                    MultiLine = true;
-                    Editable = false;
-                    ExtendedDatatype = RichContent;
-                }
                 field(OriginalSQLText; OriginalSQLText)
                 {
                     ApplicationArea = All;
@@ -176,10 +168,30 @@ page 50921 "LRQ Entry Card"
                 }
             }
         }
+
+        area(FactBoxes)
+        {
+            part(SQLStatementPart; "DTC LRQ Statement FactBox")
+            {
+                ApplicationArea = All;
+                SubPageLink = "Entry No." = field("Entry No.");
+            }
+        }
     }
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Navigate)
+            {
+                Caption = 'Navigate';
+
+                actionref(ShowFlowFieldEntries_Promoted; ShowFlowFieldEntries)
+                {
+                }
+            }
+        }
         area(Navigation)
         {
             action(ShowFlowFieldEntries)
@@ -188,14 +200,12 @@ page 50921 "LRQ Entry Card"
                 Caption = 'FlowField SubQueries';
                 ToolTip = 'View the FlowField subqueries associated with this entry.';
                 Image = List;
-                Promoted = true;
-                PromotedCategory = Process;
                 Visible = HasFlowFields;
 
                 trigger OnAction()
                 var
-                    LRQFlowFieldEntry: Record "LRQ FlowField Entry";
-                    LRQFlowFieldEntries: Page "LRQ FlowField Entries";
+                    LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry";
+                    LRQFlowFieldEntries: Page "DTC LRQ FlowField Entries";
                 begin
                     LRQFlowFieldEntry.SetRange("LRQ Entry No.", Rec."Entry No.");
                     LRQFlowFieldEntries.SetTableView(LRQFlowFieldEntry);
@@ -206,16 +216,11 @@ page 50921 "LRQ Entry Card"
     }
 
     var
-        PrettifiedSQLText: Text;
         OriginalSQLText: Text;
         HasFlowFields: Boolean;
 
     trigger OnAfterGetRecord()
     begin
-        PrettifiedSQLText := Rec.GetPrettifiedSQL();
-        if PrettifiedSQLText = '' then
-            PrettifiedSQLText := Rec.GetSQLStatement();
-
         OriginalSQLText := Rec.GetOriginalSQLStatement();
         if OriginalSQLText = '' then
             OriginalSQLText := Rec.GetSQLStatement();

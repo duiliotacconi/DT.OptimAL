@@ -1,13 +1,12 @@
 namespace DefaultNamespace;
 
-page 50910 "Index Entries"
+page 50910 "DTC Index Entries"
 {
     PageType = List;
     ApplicationArea = All;
     UsageCategory = Lists;
-    SourceTable = "Index Entry";
+    SourceTable = "DTC Index Entry";
     Caption = 'Index Entries';
-    Editable = false;
 
     layout
     {
@@ -29,6 +28,11 @@ page 50910 "Index Entries"
                 {
                     ApplicationArea = All;
                     ToolTip = 'Specifies the key index number.';
+                }
+                field("AL Key Name"; Rec."AL Key Name")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Specifies the AL key name as defined in metadata.';
                 }
                 field(Clustered; Rec.Clustered)
                 {
@@ -91,6 +95,86 @@ page 50910 "Index Entries"
                     ToolTip = 'Specifies the total number of records in the table.';
                     Style = Strong;
                 }
+                field("Fragmentation %"; Rec."Fragmentation %")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Average fragmentation percentage of the index.';
+                }
+                field("User Seeks"; Rec."User Seeks")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Number of user seeks on this index since the database was last started.';
+                }
+                field("User Scans"; Rec."User Scans")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Number of user scans on this index since the database was last started.';
+                }
+                field("User Lookups"; Rec."User Lookups")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Number of user lookups on this index since the database was last started.';
+                }
+                field("User Updates"; Rec."User Updates")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Number of user updates on this index since the database was last started.';
+                }
+                field("Last Seek"; Rec."Last Seek")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Timestamp of the last user seek on this index.';
+                }
+                field("Last Scan"; Rec."Last Scan")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Timestamp of the last user scan on this index.';
+                }
+                field("Last Lookup"; Rec."Last Lookup")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Timestamp of the last user lookup on this index.';
+                }
+                field("Last Update"; Rec."Last Update")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Timestamp of the last user update on this index.';
+                }
+                field("Enabled in Database"; Rec."Enabled in Database")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Specifies whether the index is enabled in the database (from Page Scripting import).';
+                }
+                field("AL Defined"; Rec."AL Defined")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Specifies whether the index is defined in AL code (from Page Scripting import).';
+                }
+                field("Index Size (kB)"; Rec."Index Size (kB)")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Index size in kilobytes (from Page Scripting import).';
+                }
+                field("Statistics Updated At"; Rec."Statistics Updated At")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Timestamp when the index statistics were last updated (from Page Scripting import).';
+                }
+                field(Paired; Rec.Paired)
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Specifies whether this entry was matched (paired) with an XLSX row during import.';
+                }
+                field("Created From Pairings"; Rec."Created From Pairings")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Specifies whether this entry was created from the ZIP import because no matching AL key was found.';
+                }
+                field("Database Start Time"; Rec."Database Start Time")
+                {
+                    ApplicationArea = All;
+                    ToolTip = 'Timestamp when the database was last started.';
+                }
                 field("Last Updated"; Rec."Last Updated")
                 {
                     ApplicationArea = All;
@@ -100,6 +184,11 @@ page 50910 "Index Entries"
         }
         area(Factboxes)
         {
+            part(BucketHistogram; "DTC Index Detail Chart")
+            {
+                ApplicationArea = All;
+                Caption = 'Bucket Histogram';
+            }
             systempart(Links; Links)
             {
                 ApplicationArea = All;
@@ -113,6 +202,29 @@ page 50910 "Index Entries"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Process)
+            {
+                Caption = 'Process';
+
+                actionref(RefreshIndexData_Promoted; RefreshIndexData)
+                {
+                }
+                actionref(CalculateSelectivity_Promoted; CalculateSelectivity)
+                {
+                }
+                actionref(ViewSelectivity_Promoted; ViewSelectivity)
+                {
+                }
+                actionref(ClearData_Promoted; ClearData)
+                {
+                }
+                actionref(ImportFromZip_Promoted; ImportFromZip)
+                {
+                }
+            }
+        }
         area(Processing)
         {
             action(RefreshIndexData)
@@ -121,13 +233,10 @@ page 50910 "Index Entries"
                 Caption = 'Refresh Index Data';
                 Image = Refresh;
                 ToolTip = 'Refresh the index data from the database.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    IndexMgt: Codeunit "Index Management";
+                    IndexMgt: Codeunit "DTC Index Management";
                     LastTableID: Integer;
                     SelectionChoice: Integer;
                     ContinueLbl: Label 'Continue from last table (ID: %1)', Comment = '%1 = Table ID';
@@ -162,12 +271,10 @@ page 50910 "Index Entries"
                 Caption = 'Clear All Data';
                 Image = Delete;
                 ToolTip = 'Clear all Index entries.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    IndexEntry: Record "Index Entry";
+                    IndexEntry: Record "DTC Index Entry";
                 begin
                     if not Confirm('Are you sure you want to clear all Index entries?') then
                         exit;
@@ -235,13 +342,10 @@ page 50910 "Index Entries"
                 Caption = 'Calculate Selectivity';
                 Image = Calculate;
                 ToolTip = 'Calculate selectivity and density for each field in the key and for the composite key.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    IndexMgt: Codeunit "Index Management";
+                    IndexMgt: Codeunit "DTC Index Management";
                     SelectionChoice: Integer;
                     CurrentIndexLbl: Label 'Current index only';
                     AllIndexesTableLbl: Label 'All indexes for this table';
@@ -249,15 +353,15 @@ page 50910 "Index Entries"
                     CancelLbl: Label 'Cancel';
                     IndexCount: Integer;
                 begin
-                    if (SelectionChoice <> 3) and (Rec."Total Record Count" <= 1) then begin
-                        Message('Cannot calculate selectivity for tables with 0 or 1 records.');
-                        exit;
-                    end;
-
                     SelectionChoice := StrMenu(
                         CurrentIndexLbl + ',' + AllIndexesTableLbl + ',' + AllIndexesAllTablesLbl + ',' + CancelLbl,
                         1,
                         'Calculate selectivity for:');
+
+                    if (SelectionChoice <> 3) and (Rec."Total Record Count" <= 1) then begin
+                        Message('Cannot calculate selectivity for tables with 0 or 1 records.');
+                        exit;
+                    end;
 
                     case SelectionChoice of
                         1: // Current index only
@@ -290,19 +394,32 @@ page 50910 "Index Entries"
                     end;
                 end;
             }
+            action(ImportFromZip)
+            {
+                ApplicationArea = All;
+                Caption = 'Import from ZIP';
+                Image = ImportExcel;
+                ToolTip = 'Import index statistics from a ZIP file containing paired Table Information and Indexes XLSX files (from Page Scripting output).';
+
+                trigger OnAction()
+                var
+                    IndexDataImport: Codeunit "DTC Index Data Import";
+                begin
+                    IndexDataImport.ImportFromZip();
+                    CurrPage.Update(false);
+                end;
+            }
             action(ViewSelectivity)
             {
                 ApplicationArea = All;
                 Caption = 'View Selectivity';
                 Image = Statistics;
                 ToolTip = 'View the calculated selectivity for this index without recalculating.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    IndexSelectivity: Record "Index Selectivity";
-                    IndexSelectivityPage: Page "Index Selectivity List";
+                    IndexSelectivity: Record "DTC Index Selectivity";
+                    IndexSelectivityPage: Page "DTC Index Selectivity List";
                 begin
                     IndexSelectivity.SetRange("Index Entry No.", Rec."Entry No.");
                     if IndexSelectivity.IsEmpty() then begin
@@ -317,4 +434,9 @@ page 50910 "Index Entries"
             }
         }
     }
+
+    trigger OnAfterGetCurrRecord()
+    begin
+        CurrPage.BucketHistogram.Page.SetIndexDetail(Rec."Entry No.", "DTC Selectivity Type"::Index, 0);
+    end;
 }

@@ -3,7 +3,7 @@ namespace DefaultNamespace;
 using System.Integration;
 using System.Visualization;
 
-page 50914 "Index Detail Chart"
+page 50914 "DTC Index Detail Chart"
 {
     Caption = 'Index Histogram';
     PageType = CardPart;
@@ -32,12 +32,12 @@ page 50914 "Index Detail Chart"
 
     var
         IndexEntryNo: Integer;
-        SelectivityTypeFilter: Enum "Selectivity Type";
+        SelectivityTypeFilter: Enum "DTC Selectivity Type";
         FieldNoFilter: Integer;
         IsChartAddInReady: Boolean;
         HasFilters: Boolean;
 
-    procedure SetIndexDetail(EntryNo: Integer; SelType: Enum "Selectivity Type"; FieldNo: Integer)
+    procedure SetIndexDetail(EntryNo: Integer; SelType: Enum "DTC Selectivity Type"; FieldNo: Integer)
     begin
         IndexEntryNo := EntryNo;
         SelectivityTypeFilter := SelType;
@@ -49,8 +49,8 @@ page 50914 "Index Detail Chart"
 
     local procedure UpdateChart()
     var
-        IndexDetail: Record "Index Detail";
-        BusinessChart: Codeunit "Business Chart";
+        IndexDetail: Record "DTC Index Detail";
+        BusChart: Codeunit "Business Chart";
         BucketLbl: Label 'Bucket';
         NoOfGroupsLbl: Label 'No. of Groups';
         XIndex: Integer;
@@ -61,9 +61,9 @@ page 50914 "Index Detail Chart"
         if IndexEntryNo = 0 then
             exit;
 
-        BusinessChart.Initialize();
-        BusinessChart.SetXDimension(BucketLbl, Enum::"Business Chart Data Type"::String);
-        BusinessChart.AddMeasure(NoOfGroupsLbl, 1, Enum::"Business Chart Data Type"::Integer, Enum::"Business Chart Type"::Column);
+        BusChart.Initialize();
+        BusChart.SetXDimension(BucketLbl, Enum::"Business Chart Data Type"::String);
+        BusChart.AddMeasure(NoOfGroupsLbl, 1, Enum::"Business Chart Data Type"::Integer, Enum::"Business Chart Type"::Column);
 
         IndexDetail.SetRange("Index Entry No.", IndexEntryNo);
         IndexDetail.SetRange("Selectivity Type", SelectivityTypeFilter);
@@ -74,11 +74,11 @@ page 50914 "Index Detail Chart"
         XIndex := 0;
         if IndexDetail.FindSet() then
             repeat
-                BusinessChart.AddDataRowWithXDimension(Format(IndexDetail.Bucket));
-                BusinessChart.SetValue(NoOfGroupsLbl, XIndex, IndexDetail."No. of Groups");
+                BusChart.AddDataRowWithXDimension(Format(IndexDetail.Bucket));
+                BusChart.SetValue(NoOfGroupsLbl, XIndex, IndexDetail."No. of Groups");
                 XIndex += 1;
             until IndexDetail.Next() = 0;
 
-        BusinessChart.Update(CurrPage.BusinessChart);
+        BusChart.Update(CurrPage.BusinessChart);
     end;
 }

@@ -1,6 +1,6 @@
 namespace DefaultNamespace;
 
-enum 50911 "Index Source Type"
+enum 50911 "DTC Index Source Type"
 {
     Extensible = true;
     Caption = 'Index Source Type';

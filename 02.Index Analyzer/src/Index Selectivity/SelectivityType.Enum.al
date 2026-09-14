@@ -1,6 +1,6 @@
 namespace DefaultNamespace;
 
-enum 50910 "Selectivity Type"
+enum 50910 "DTC Selectivity Type"
 {
     Extensible = true;
     Caption = 'Selectivity Type';
