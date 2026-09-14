@@ -2,7 +2,7 @@ namespace DefaultNamespace;
 
 using System.Reflection;
 
-codeunit 50910 "Index Management"
+codeunit 50910 "DTC Index Management"
 {
     procedure CollectIndexData()
     begin
@@ -11,14 +11,13 @@ codeunit 50910 "Index Management"
 
     procedure CollectIndexDataFromTable(StartFromTableID: Integer; ClearExisting: Boolean)
     var
-        IndexEntry: Record "Index Entry";
-        TableIndex: Record "Table Index";
+        IndexEntry: Record "DTC Index Entry";
+        TableIndex: Record "DTC Table Index";
         TableMetadata: Record "Table Metadata";
         KeyMetadata: Record "Key";
         AllObj: Record AllObjWithCaption;
-        RecRef: RecordRef;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Processing Index Data...\Table: #1######## #2##############################\Key Index: #3####';
+        ProgressMsg: Label 'Processing Index Data...\Table: #1######## #2##############################\Key Index: #3####', Comment = '#1 = Table ID, #2 = Table Name, #3 = Key Index';
         RecordCount: Integer;
         LastTableID: Integer;
         IndexCount: Integer;
@@ -45,9 +44,9 @@ codeunit 50910 "Index Management"
         LastTableID := 0;
 
         // Loop through all tables (excluding system, virtual, internal/private tables, and our own analyzer tables)
-        TableMetadata.SetFilter(ID, '<%1&<>%2&<>%3', 2000000000, Database::"Index Entry", Database::"Table Index"); // Exclude system tables and our own tables
+        TableMetadata.SetFilter(ID, '<%1&<>%2&<>%3', 2000000000, Database::"DTC Index Entry", Database::"DTC Table Index"); // Exclude system tables and our own tables
         if StartFromTableID > 0 then
-            TableMetadata.SetFilter(ID, '>=%1&<%2&<>%3&<>%4', StartFromTableID, 2000000000, Database::"Index Entry", Database::"Table Index"); // Start from specified table (inclusive)
+            TableMetadata.SetFilter(ID, '>=%1&<%2&<>%3&<>%4', StartFromTableID, 2000000000, Database::"DTC Index Entry", Database::"DTC Table Index"); // Start from specified table (inclusive)
         TableMetadata.SetRange(TableType, TableMetadata.TableType::Normal); // Exclude virtual tables
         TableMetadata.SetRange(Access, TableMetadata.Access::Public); // Only public tables (exclude internal/private)
         if TableMetadata.FindSet() then
@@ -113,7 +112,7 @@ codeunit 50910 "Index Management"
         ProgressDialog.Close();
     end;
 
-    local procedure CreateTableIndex(var TableIndex: Record "Table Index"; TableID: Integer; TableName: Text[250]; IndexCount: Integer; VSIFTCount: Integer; IncludedCount: Integer; SIFTFieldsCount: Integer; RecordCount: Integer)
+    local procedure CreateTableIndex(var TableIndex: Record "DTC Table Index"; TableID: Integer; TableName: Text[250]; IndexCount: Integer; VSIFTCount: Integer; IncludedCount: Integer; SIFTFieldsCount: Integer; RecordCount: Integer)
     begin
         Clear(TableIndex);
         TableIndex.Init();
@@ -130,7 +129,7 @@ codeunit 50910 "Index Management"
 
     procedure GetLastProcessedTableID(): Integer
     var
-        IndexEntry: Record "Index Entry";
+        IndexEntry: Record "DTC Index Entry";
     begin
         IndexEntry.Reset();
         if IndexEntry.FindLast() then
@@ -140,12 +139,12 @@ codeunit 50910 "Index Management"
 
     procedure HasExistingData(): Boolean
     var
-        IndexEntry: Record "Index Entry";
+        IndexEntry: Record "DTC Index Entry";
     begin
         exit(not IndexEntry.IsEmpty());
     end;
 
-    local procedure CreateIndexEntry(var IndexEntry: Record "Index Entry"; KeyMetadata: Record "Key"; TableName: Text[250]; RecordCount: Integer)
+    local procedure CreateIndexEntry(var IndexEntry: Record "DTC Index Entry"; KeyMetadata: Record "Key"; TableName: Text[250]; RecordCount: Integer)
     var
         IncludedColumns: Text;
     begin
@@ -154,6 +153,7 @@ codeunit 50910 "Index Management"
         IndexEntry."Table ID" := KeyMetadata.TableNo;
         IndexEntry."Table Name" := TableName;
         IndexEntry."Key Index" := KeyMetadata."No.";
+        IndexEntry."AL Key Name" := CopyStr(KeyMetadata."Key name", 1, 250);
 
         // Key Fields
         IndexEntry."Key Fields" := CopyStr(KeyMetadata."Key", 1, 500);
@@ -191,7 +191,6 @@ codeunit 50910 "Index Management"
 
     local procedure GetTableRecordCount(TableID: Integer): Integer
     var
-        RecRef: RecordRef;
         RecordCount: Integer;
     begin
         // Use TryFunction pattern to handle permission errors
@@ -238,12 +237,11 @@ codeunit 50910 "Index Management"
         IncludedFields := '';
         foreach SQLField in SQLFieldList do begin
             IsKeyField := false;
-            foreach KeyField in KeyFieldList do begin
+            foreach KeyField in KeyFieldList do
                 if SQLField = KeyField then begin
                     IsKeyField := true;
                     break;
                 end;
-            end;
 
             if not IsKeyField then begin
                 if IncludedFields <> '' then
@@ -295,14 +293,13 @@ codeunit 50910 "Index Management"
         RecRef.Open(TableNo);
         ParseFieldList(FieldList, FieldNoList);
 
-        foreach FieldNo in FieldNoList do begin
+        foreach FieldNo in FieldNoList do
             if RecRef.FieldExist(FieldNo) then begin
                 FieldRef := RecRef.Field(FieldNo);
                 if FieldNames <> '' then
                     FieldNames += ', ';
                 FieldNames += FieldRef.Name;
             end;
-        end;
 
         RecRef.Close();
         exit(FieldNames);
@@ -341,17 +338,16 @@ codeunit 50910 "Index Management"
             exit(0);
 
         FieldCount := 1;
-        for i := 1 to StrLen(FieldList) do begin
+        for i := 1 to StrLen(FieldList) do
             if FieldList[i] = ',' then
                 FieldCount += 1;
-        end;
         exit(FieldCount);
     end;
 
-    procedure CalculateSelectivity(IndexEntry: Record "Index Entry")
+    procedure CalculateSelectivity(IndexEntry: Record "DTC Index Entry")
     var
-        IndexSelectivity: Record "Index Selectivity";
-        IndexDetail: Record "Index Detail";
+        IndexSelectivity: Record "DTC Index Selectivity";
+        IndexDetail: Record "DTC Index Detail";
         RecRef: RecordRef;
         FieldRef: FieldRef;
         KeyFieldList: List of [Integer];
@@ -368,7 +364,7 @@ codeunit 50910 "Index Management"
         FieldName: Text;
         AllFieldNames: Dictionary of [Integer, Text];
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating Selectivity...\Phase: #1##############################\Progress: #2#### / #3####';
+        ProgressMsg: Label 'Calculating Selectivity...\Phase: #1##############################\Progress: #2#### / #3####', Comment = '#1 = Phase description, #2 = Current progress, #3 = Total count';
     begin
         // Delete existing selectivity and detail records for this index entry only
         IndexSelectivity.SetRange("Index Entry No.", IndexEntry."Entry No.");
@@ -403,14 +399,13 @@ codeunit 50910 "Index Management"
 
 
         // Initialize dictionaries for all fields (composite key or non-PK indexes)
-        foreach FieldNo in KeyFieldList do begin
+        foreach FieldNo in KeyFieldList do
             if RecRef.FieldExist(FieldNo) then begin
                 FieldRef := RecRef.Field(FieldNo);
                 AllFieldNames.Add(FieldNo, FieldRef.Name);
                 Clear(TempFieldDict);
                 FieldDistinctValues.Add(FieldNo, TempFieldDict);
             end;
-        end;
 
         // ============================================
         // SINGLE PASS: Collect ALL field values and composite key at once
@@ -426,7 +421,7 @@ codeunit 50910 "Index Management"
                     ProgressDialog.Update(2, CurrentRow);
 
                 // Collect values for ALL individual fields in this single record read
-                foreach FieldNo in KeyFieldList do begin
+                foreach FieldNo in KeyFieldList do
                     if RecRef.FieldExist(FieldNo) then begin
                         FieldRef := RecRef.Field(FieldNo);
                         FieldValue := Format(FieldRef.Value);
@@ -439,7 +434,6 @@ codeunit 50910 "Index Management"
                             TempFieldDict.Set(FieldValue, TempFieldDict.Get(FieldValue) + 1);
                         FieldDistinctValues.Set(FieldNo, TempFieldDict);
                     end;
-                end;
 
                 // Build composite key from the same record
                 CompositeKey := BuildCompositeKeyFromRecord(RecRef, KeyFieldList);
@@ -475,9 +469,9 @@ codeunit 50910 "Index Management"
                 CreateSelectivityRecord(
                     IndexSelectivity,
                     IndexEntry,
-                    "Selectivity Type"::Field,
+                    "DTC Selectivity Type"::Field,
                     FieldNo,
-                    FieldName,
+                    CopyStr(FieldName, 1, 250),
                     FieldPosition,
                     DistinctCount,
                     TotalRows
@@ -486,9 +480,9 @@ codeunit 50910 "Index Management"
                 // Create bucket histogram for this field
                 CreateBucketHistogram(
                     IndexEntry."Entry No.",
-                    "Selectivity Type"::Field,
+                    "DTC Selectivity Type"::Field,
                     FieldNo,
-                    FieldName,
+                    CopyStr(FieldName, 1, 250),
                     TempFieldDict
                 );
             end;
@@ -499,7 +493,7 @@ codeunit 50910 "Index Management"
         CreateSelectivityRecord(
             IndexSelectivity,
             IndexEntry,
-            "Selectivity Type"::Index,
+            "DTC Selectivity Type"::Index,
             0,
             'Composite Key (' + CopyStr(IndexEntry."Key Fields", 1, 200) + ')',
             0,
@@ -508,16 +502,16 @@ codeunit 50910 "Index Management"
         );
 
         // Create bucket histogram for the composite key
-        CreateBucketHistogram(IndexEntry."Entry No.", "Selectivity Type"::Index, 0, 'Composite Key', IndexDistinctDict);
+        CreateBucketHistogram(IndexEntry."Entry No.", "DTC Selectivity Type"::Index, 0, 'Composite Key', IndexDistinctDict);
 
         ProgressDialog.Close();
         Commit();
     end;
 
     local procedure CreateSelectivityRecord(
-        var IndexSelectivity: Record "Index Selectivity";
-        IndexEntry: Record "Index Entry";
-        SelectivityType: Enum "Selectivity Type";
+        var IndexSelectivity: Record "DTC Index Selectivity";
+        IndexEntry: Record "DTC Index Entry";
+        SelectivityType: Enum "DTC Selectivity Type";
                              FieldNo: Integer;
                              FieldName: Text[250];
                              FieldPosition: Integer;
@@ -556,13 +550,13 @@ codeunit 50910 "Index Management"
 
     local procedure CreateBucketHistogram(
         IndexEntryNo: Integer;
-        SelectivityType: Enum "Selectivity Type";
+        SelectivityType: Enum "DTC Selectivity Type";
                              FieldNo: Integer;
                              FieldName: Text[250];
         var ValuesDict: Dictionary of [Text, Integer]
     )
     var
-        IndexDetail: Record "Index Detail";
+        IndexDetail: Record "DTC Index Detail";
         BucketDict: Dictionary of [Integer, Integer];
         ValueKey: Text;
         ValueKeys: List of [Text];
@@ -639,13 +633,13 @@ codeunit 50910 "Index Management"
 
     procedure CalculateSelectivityForTable(TableID: Integer; TableName: Text[250]): Integer
     var
-        IndexEntry: Record "Index Entry";
-        IndexSelectivity: Record "Index Selectivity";
-        IndexDetail: Record "Index Detail";
+        IndexEntry: Record "DTC Index Entry";
+        IndexSelectivity: Record "DTC Index Selectivity";
+        IndexDetail: Record "DTC Index Detail";
         RecRef: RecordRef;
         FieldRef: FieldRef;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating Selectivity for Table...\Table: #1##############################\Phase: #2##############################\Progress: #3#### / #4####';
+        ProgressMsg: Label 'Calculating Selectivity for Table...\Table: #1##############################\Phase: #2##############################\Progress: #3#### / #4####', Comment = '#1 = Table name, #2 = Phase description, #3 = Current progress, #4 = Total count';
         // Data structures for single-pass processing
         AllFieldNumbers: List of [Integer];                           // Unique field numbers across all indexes
         AllFieldNames: Dictionary of [Integer, Text];                  // Field No -> Field Name mapping
@@ -720,7 +714,7 @@ codeunit 50910 "Index Management"
         // Open table and get field names
         RecRef.Open(TableID);
 
-        foreach FieldNo in AllFieldNumbers do begin
+        foreach FieldNo in AllFieldNumbers do
             if RecRef.FieldExist(FieldNo) then begin
                 FieldRef := RecRef.Field(FieldNo);
                 AllFieldNames.Add(FieldNo, FieldRef.Name);
@@ -730,7 +724,6 @@ codeunit 50910 "Index Management"
                     FieldDistinctValues.Add(FieldNo, TempFieldDict);
                 end;
             end;
-        end;
 
         TotalRows := RecRef.Count();
         if TotalRows = 0 then begin
@@ -753,7 +746,7 @@ codeunit 50910 "Index Management"
                     ProgressDialog.Update(3, CurrentRow);
 
                 // Collect values for ALL individual fields in a single record read
-                foreach FieldNo in AllFieldNumbers do begin
+                foreach FieldNo in AllFieldNumbers do
                     if (FieldNo <> 1) and RecRef.FieldExist(FieldNo) then begin
                         FieldRef := RecRef.Field(FieldNo);
                         FieldValue := Format(FieldRef.Value);
@@ -766,7 +759,6 @@ codeunit 50910 "Index Management"
                             TempFieldDict.Set(FieldValue, TempFieldDict.Get(FieldValue) + 1);
                         FieldDistinctValues.Set(FieldNo, TempFieldDict);
                     end;
-                end;
 
                 // Build ALL composite keys for ALL indexes from this single record
                 foreach EntryNo in EntryNoList do begin
@@ -808,14 +800,14 @@ codeunit 50910 "Index Management"
                                 CreateSelectivityRecord(
                                     IndexSelectivity,
                                     IndexEntry,
-                                    "Selectivity Type"::Field,
+                                    "DTC Selectivity Type"::Field,
                                     FieldNo,
                                     AllFieldNames.Get(FieldNo) + ' (Primary Key - Skipped)',
                                     FieldPosition,
                                     TotalRows,
                                     TotalRows
                                 );
-                        end else begin
+                        end else
                             if FieldDistinctValues.ContainsKey(FieldNo) then begin
                                 TempFieldDict := FieldDistinctValues.Get(FieldNo);
                                 DistinctCount := TempFieldDict.Count;
@@ -824,9 +816,9 @@ codeunit 50910 "Index Management"
                                 CreateSelectivityRecord(
                                     IndexSelectivity,
                                     IndexEntry,
-                                    "Selectivity Type"::Field,
+                                    "DTC Selectivity Type"::Field,
                                     FieldNo,
-                                    AllFieldNames.Get(FieldNo),
+                                    CopyStr(AllFieldNames.Get(FieldNo), 1, 250),
                                     FieldPosition,
                                     DistinctCount,
                                     TotalRows
@@ -835,18 +827,17 @@ codeunit 50910 "Index Management"
                                 // Create bucket histogram for this field (only for first index that uses this field)
                                 IndexDetail.Reset();
                                 IndexDetail.SetRange("Index Entry No.", IndexEntry."Entry No.");
-                                IndexDetail.SetRange("Selectivity Type", "Selectivity Type"::Field);
+                                IndexDetail.SetRange("Selectivity Type", "DTC Selectivity Type"::Field);
                                 IndexDetail.SetRange("Field No.", FieldNo);
                                 if IndexDetail.IsEmpty then
                                     CreateBucketHistogram(
                                         IndexEntry."Entry No.",
-                                        "Selectivity Type"::Field,
+                                        "DTC Selectivity Type"::Field,
                                         FieldNo,
-                                        AllFieldNames.Get(FieldNo),
+                                        CopyStr(AllFieldNames.Get(FieldNo), 1, 250),
                                         TempFieldDict
                                     );
                             end;
-                        end;
                     end;
 
                     // Create composite key selectivity record for this index
@@ -857,7 +848,7 @@ codeunit 50910 "Index Management"
                         CreateSelectivityRecord(
                             IndexSelectivity,
                             IndexEntry,
-                            "Selectivity Type"::Index,
+                            "DTC Selectivity Type"::Index,
                             0,
                             'Composite Key (' + CopyStr(IndexEntry."Key Fields", 1, 200) + ')',
                             0,
@@ -868,7 +859,7 @@ codeunit 50910 "Index Management"
                         // Create bucket histogram for the composite key
                         CreateBucketHistogram(
                             IndexEntry."Entry No.",
-                            "Selectivity Type"::Index,
+                            "DTC Selectivity Type"::Index,
                             0,
                             'Composite Key',
                             TempFieldDict
@@ -889,22 +880,21 @@ codeunit 50910 "Index Management"
         CompositeKey: Text;
     begin
         CompositeKey := '';
-        foreach FieldNo in KeyFieldList do begin
+        foreach FieldNo in KeyFieldList do
             if RecRef.FieldExist(FieldNo) then begin
                 FieldRef := RecRef.Field(FieldNo);
                 if CompositeKey <> '' then
                     CompositeKey += '|';
                 CompositeKey += Format(FieldRef.Value);
             end;
-        end;
         exit(CompositeKey);
     end;
 
     procedure CalculateSelectivityForAllTables(): Integer
     var
-        TableIndex: Record "Table Index";
+        TableIndex: Record "DTC Table Index";
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating Selectivity for All Tables...\Table: #1######## #2##############################\Progress: #3#### / #4####';
+        ProgressMsg: Label 'Calculating Selectivity for All Tables...\Table: #1######## #2##############################\Progress: #3#### / #4####', Comment = '#1 = Table ID, #2 = Table Name, #3 = Current progress, #4 = Total count';
         TotalTables: Integer;
         CurrentTable: Integer;
         TotalIndexes: Integer;

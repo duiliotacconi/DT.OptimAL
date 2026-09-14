@@ -2,12 +2,12 @@ namespace DefaultNamespace;
 
 using System.Reflection;
 
-table 50911 "Table Index"
+table 50911 "DTC Table Index"
 {
     DataClassification = SystemMetadata;
     Caption = 'Table Index';
-    LookupPageId = "Table Index List";
-    DrillDownPageId = "Table Index List";
+    LookupPageId = "DTC Table Index List";
+    DrillDownPageId = "DTC Table Index List";
 
     fields
     {
@@ -58,28 +58,28 @@ table 50911 "Table Index"
             Caption = 'No. of LRQ';
             Editable = false;
             FieldClass = FlowField;
-            CalcFormula = count("LRQ Entry" where("Table ID" = field("Table ID"), "Query Type" = filter('Query|Query with FF')));
+            CalcFormula = count("DTC LRQ Entry" where("Table ID" = field("Table ID"), "Query Type" = filter('Query|Query with FF')));
         }
         field(22; "Total Duration of LRQ"; Duration)
         {
             Caption = 'Total Duration of LRQ';
             Editable = false;
             FieldClass = FlowField;
-            CalcFormula = sum("LRQ Entry"."Total Duration" where("Table ID" = field("Table ID"), "Query Type" = filter('Query|Query with FF')));
+            CalcFormula = sum("DTC LRQ Entry"."Total Duration" where("Table ID" = field("Table ID"), "Query Type" = filter('Query|Query with FF')));
         }
         field(23; "No. of FF"; Integer)
         {
             Caption = 'No. of FlowFields';
             Editable = false;
             FieldClass = FlowField;
-            CalcFormula = count("LRQ FlowField Entry" where("Table ID" = field("Table ID")));
+            CalcFormula = count("DTC LRQ FlowField Entry" where("Table ID" = field("Table ID")));
         }
         field(24; "No. of Missing Indexes"; Integer)
         {
             Caption = 'No. of Missing Indexes';
             Editable = false;
             FieldClass = FlowField;
-            CalcFormula = count("Missing Index" where("Table ID" = field("Table ID")));
+            CalcFormula = count("DTC Missing Index" where("Table ID" = field("Table ID")));
         }
         field(30; "Last Updated"; DateTime)
         {

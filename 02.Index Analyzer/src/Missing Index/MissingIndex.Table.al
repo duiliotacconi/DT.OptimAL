@@ -2,12 +2,12 @@ namespace DefaultNamespace;
 
 using System.Reflection;
 
-table 50925 "Missing Index"
+table 50925 "DTC Missing Index"
 {
     DataClassification = SystemMetadata;
     Caption = 'Missing Index';
-    LookupPageId = "Missing Index List";
-    DrillDownPageId = "Missing Index List";
+    LookupPageId = "DTC Missing Index List";
+    DrillDownPageId = "DTC Missing Index List";
 
     fields
     {

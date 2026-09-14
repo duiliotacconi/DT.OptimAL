@@ -1,10 +1,10 @@
 namespace DefaultNamespace;
 
-page 50912 "Index Selectivity List"
+page 50912 "DTC Index Selectivity List"
 {
     PageType = List;
     ApplicationArea = All;
-    SourceTable = "Index Selectivity";
+    SourceTable = "DTC Index Selectivity";
     SourceTableView = sorting("Index Entry No.", "Selectivity Type", "Field Position");
     Caption = 'Index Selectivity';
     Editable = false;
@@ -104,6 +104,31 @@ page 50912 "Index Selectivity List"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Process)
+            {
+                Caption = 'Process';
+
+                actionref(ViewHistogram_Promoted; ViewHistogram)
+                {
+                }
+            }
+            group(Category_Filter)
+            {
+                Caption = 'Filter';
+
+                actionref(ShowFieldsOnly_Promoted; ShowFieldsOnly)
+                {
+                }
+                actionref(ShowKeysOnly_Promoted; ShowKeysOnly)
+                {
+                }
+                actionref(ClearFilters_Promoted; ClearFilters)
+                {
+                }
+            }
+        }
         area(Processing)
         {
             action(ViewHistogram)
@@ -112,14 +137,11 @@ page 50912 "Index Selectivity List"
                 Caption = 'View Histogram';
                 Image = AnalysisView;
                 ToolTip = 'View the bucket histogram for this field or index.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    IndexDetail: Record "Index Detail";
-                    IndexDetailsPage: Page "Index Details";
+                    IndexDetail: Record "DTC Index Detail";
+                    IndexDetailsPage: Page "DTC Index Details";
                 begin
                     IndexDetail.SetRange("Index Entry No.", Rec."Index Entry No.");
                     IndexDetail.SetRange("Selectivity Type", Rec."Selectivity Type");
@@ -136,8 +158,6 @@ page 50912 "Index Selectivity List"
                 Caption = 'Show Fields Only';
                 Image = FilterLines;
                 ToolTip = 'Filter to show only field-level selectivity.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 begin
@@ -151,8 +171,6 @@ page 50912 "Index Selectivity List"
                 Caption = 'Show Keys Only';
                 Image = FilterLines;
                 ToolTip = 'Filter to show only index/key-level selectivity.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 begin
@@ -166,8 +184,6 @@ page 50912 "Index Selectivity List"
                 Caption = 'Clear Filters';
                 Image = ClearFilter;
                 ToolTip = 'Clear all filters and show all selectivity data.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 begin
@@ -181,28 +197,22 @@ page 50912 "Index Selectivity List"
     var
         TableNameHeader: Text[250];
         KeyFieldsHeader: Text[500];
-        IndexEntryNoVar: Integer;
-        MissingIndexEntryNoVar: Integer;
-        VSIFTEntryNoVar: Integer;
 
-    procedure SetEntry(var IndexEntry: Record "Index Entry")
+    procedure SetEntry(var IndexEntry: Record "DTC Index Entry")
     begin
         TableNameHeader := IndexEntry."Table Name";
         KeyFieldsHeader := IndexEntry."Key Fields";
-        IndexEntryNoVar := IndexEntry."Entry No.";
     end;
 
-    procedure SetMissingIndexEntry(var MissingIndex: Record "Missing Index")
+    procedure SetMissingIndexEntry(var MissingIndex: Record "DTC Missing Index")
     begin
         TableNameHeader := MissingIndex."AL Table Name";
-        KeyFieldsHeader := 'Equality: ' + MissingIndex."Equality Fields" + ' | Inequality: ' + MissingIndex."Inequality Fields";
-        MissingIndexEntryNoVar := MissingIndex."Entry No.";
+        KeyFieldsHeader := CopyStr('Equality: ' + MissingIndex."Equality Fields" + ' | Inequality: ' + MissingIndex."Inequality Fields", 1, 500);
     end;
 
-    procedure SetVSIFTEntry(var VSIFTEntry: Record "VSIFT Entry")
+    procedure SetVSIFTEntry(var VSIFTEntry: Record "DTC VSIFT Entry")
     begin
         TableNameHeader := VSIFTEntry."Table Name";
-        KeyFieldsHeader := 'Key Fields: ' + VSIFTEntry."Key Fields" + ' | SIFT Fields: ' + VSIFTEntry."SIFT Fields";
-        VSIFTEntryNoVar := VSIFTEntry."Entry No.";
+        KeyFieldsHeader := CopyStr('Key Fields: ' + VSIFTEntry."Key Fields" + ' | SIFT Fields: ' + VSIFTEntry."SIFT Fields", 1, 500);
     end;
 }

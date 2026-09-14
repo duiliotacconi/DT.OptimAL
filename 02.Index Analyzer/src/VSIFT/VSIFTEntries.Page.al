@@ -1,13 +1,13 @@
 namespace DefaultNamespace;
 
-page 50900 "VSIFT Entries"
+page 50900 "DTC VSIFT Entries"
 {
     PageType = List;
     ApplicationArea = All;
     UsageCategory = Lists;
-    SourceTable = "VSIFT Entry";
+    SourceTable = "DTC VSIFT Entry";
     Caption = 'VSIFT Entries';
-    CardPageId = "VSIFT Entry Card";
+    CardPageId = "DTC VSIFT Entry Card";
     Editable = false;
 
     layout
@@ -79,7 +79,7 @@ page 50900 "VSIFT Entries"
         }
         area(Factboxes)
         {
-            part(VSIFTChartPart; "VSIFT Detail Chart")
+            part(VSIFTChartPart; "DTC VSIFT Detail Chart")
             {
                 ApplicationArea = All;
             }
@@ -96,6 +96,26 @@ page 50900 "VSIFT Entries"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Process)
+            {
+                Caption = 'Process';
+
+                actionref(RefreshVSIFTData_Promoted; RefreshVSIFTData)
+                {
+                }
+                actionref(CalculateSelectivity_Promoted; CalculateSelectivity)
+                {
+                }
+                actionref(ViewDetails_Promoted; ViewDetails)
+                {
+                }
+                actionref(ClearData_Promoted; ClearData)
+                {
+                }
+            }
+        }
         area(Processing)
         {
             action(RefreshVSIFTData)
@@ -104,13 +124,10 @@ page 50900 "VSIFT Entries"
                 Caption = 'Refresh VSIFT Data';
                 Image = Refresh;
                 ToolTip = 'Refresh the VSIFT data from the database.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    VSIFTMgt: Codeunit "VSIFT Management";
+                    VSIFTMgt: Codeunit "DTC VSIFT Management";
                     LastTableID: Integer;
                     SelectionChoice: Integer;
                     CurrentTableLbl: Label 'Current table only (%1)', Comment = '%1 = Table Name';
@@ -148,13 +165,11 @@ page 50900 "VSIFT Entries"
                 Caption = 'View Details';
                 Image = View;
                 ToolTip = 'View detailed VSIFT information for the selected entry.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    VSIFTDetail: Record "VSIFT Detail";
-                    VSIFTDetailsPage: Page "VSIFT Details";
+                    VSIFTDetail: Record "DTC VSIFT Detail";
+                    VSIFTDetailsPage: Page "DTC VSIFT Details";
                 begin
                     VSIFTDetail.SetRange("VSIFT Entry No.", Rec."Entry No.");
                     VSIFTDetailsPage.SetTableView(VSIFTDetail);
@@ -169,13 +184,11 @@ page 50900 "VSIFT Entries"
                 Caption = 'Clear All Data';
                 Image = Delete;
                 ToolTip = 'Clear all VSIFT entries and details.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    VSIFTEntry: Record "VSIFT Entry";
-                    VSIFTDetail: Record "VSIFT Detail";
+                    VSIFTEntry: Record "DTC VSIFT Entry";
+                    VSIFTDetail: Record "DTC VSIFT Detail";
                 begin
                     if not Confirm('Do you want to delete all VSIFT data?', false) then
                         exit;
@@ -192,13 +205,10 @@ page 50900 "VSIFT Entries"
                 Caption = 'Calculate Selectivity';
                 Image = Calculate;
                 ToolTip = 'Calculate selectivity and density for each field in the VSIFT key.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    VSIFTMgt: Codeunit "VSIFT Management";
+                    VSIFTMgt: Codeunit "DTC VSIFT Management";
                     SelectionChoice: Integer;
                     CurrentVSIFTLbl: Label 'Current VSIFT only';
                     AllVSIFTsTableLbl: Label 'All VSIFTs for this table';

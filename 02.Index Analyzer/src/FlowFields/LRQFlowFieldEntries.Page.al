@@ -1,10 +1,10 @@
 namespace DefaultNamespace;
 
-page 50924 "LRQ FlowField Entries"
+page 50924 "DTC LRQ FlowField Entries"
 {
     PageType = List;
     ApplicationArea = All;
-    SourceTable = "LRQ FlowField Entry";
+    SourceTable = "DTC LRQ FlowField Entry";
     Caption = 'LRQ FlowField Entries';
     Editable = false;
 
@@ -39,8 +39,8 @@ page 50924 "LRQ FlowField Entries"
 
                     trigger OnDrillDown()
                     var
-                        TableIndex: Record "Table Index";
-                        TableIndexList: Page "Table Index List";
+                        TableIndex: Record "DTC Table Index";
+                        TableIndexList: Page "DTC Table Index List";
                     begin
                         if Rec."Table ID" > 0 then begin
                             TableIndex.SetRange("Table ID", Rec."Table ID");
@@ -99,7 +99,7 @@ page 50924 "LRQ FlowField Entries"
         }
         area(Factboxes)
         {
-            part(SQLStatementPart; "LRQ FF Statement FactBox")
+            part(SQLStatementPart; "DTC LRQ FF Statement FactBox")
             {
                 ApplicationArea = All;
                 SubPageLink = "Entry No." = field("Entry No.");
@@ -109,6 +109,20 @@ page 50924 "LRQ FlowField Entries"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Navigate)
+            {
+                Caption = 'Navigate';
+
+                actionref(ShowParentEntry_Promoted; ShowParentEntry)
+                {
+                }
+                actionref(ShowTableIndexes_Promoted; ShowTableIndexes)
+                {
+                }
+            }
+        }
         area(Navigation)
         {
             action(ShowParentEntry)
@@ -117,13 +131,11 @@ page 50924 "LRQ FlowField Entries"
                 Caption = 'Show Parent LRQ Entry';
                 ToolTip = 'Navigate to the parent LRQ entry.';
                 Image = Hierarchy;
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    LRQEntry: Record "LRQ Entry";
-                    LRQEntryCard: Page "LRQ Entry Card";
+                    LRQEntry: Record "DTC LRQ Entry";
+                    LRQEntryCard: Page "DTC LRQ Entry Card";
                 begin
                     if LRQEntry.Get(Rec."LRQ Entry No.") then begin
                         LRQEntryCard.SetRecord(LRQEntry);
@@ -137,13 +149,11 @@ page 50924 "LRQ FlowField Entries"
                 Caption = 'Show Table Indexes';
                 ToolTip = 'View indexes for the FlowField source table.';
                 Image = Table;
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    TableIndex: Record "Table Index";
-                    TableIndexList: Page "Table Index List";
+                    TableIndex: Record "DTC Table Index";
+                    TableIndexList: Page "DTC Table Index List";
                 begin
                     if Rec."Table ID" > 0 then begin
                         TableIndex.SetRange("Table ID", Rec."Table ID");

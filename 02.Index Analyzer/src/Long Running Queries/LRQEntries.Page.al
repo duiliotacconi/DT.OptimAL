@@ -1,11 +1,11 @@
 namespace DefaultNamespace;
 
-page 50920 "LRQ Entries"
+page 50920 "DTC LRQ Entries"
 {
     PageType = List;
     ApplicationArea = All;
     UsageCategory = Lists;
-    SourceTable = "LRQ Entry";
+    SourceTable = "DTC LRQ Entry";
     Caption = 'Long Running Query Entries';
     Editable = false;
 
@@ -60,8 +60,8 @@ page 50920 "LRQ Entries"
 
                     trigger OnDrillDown()
                     var
-                        LRQFlowFieldEntry: Record "LRQ FlowField Entry";
-                        LRQFlowFieldEntries: Page "LRQ FlowField Entries";
+                        LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry";
+                        LRQFlowFieldEntries: Page "DTC LRQ FlowField Entries";
                     begin
                         LRQFlowFieldEntry.SetRange("LRQ Entry No.", Rec."Entry No.");
                         LRQFlowFieldEntries.SetTableView(LRQFlowFieldEntry);
@@ -146,7 +146,7 @@ page 50920 "LRQ Entries"
         }
         area(Factboxes)
         {
-            part(SQLStatementPart; "LRQ Statement FactBox")
+            part(SQLStatementPart; "DTC LRQ Statement FactBox")
             {
                 ApplicationArea = All;
                 SubPageLink = "Entry No." = field("Entry No.");
@@ -164,6 +164,31 @@ page 50920 "LRQ Entries"
 
     actions
     {
+        area(Promoted)
+        {
+            group(Category_Process)
+            {
+                Caption = 'Process';
+
+                actionref(ViewSQLStatement_Promoted; ViewSQLStatement)
+                {
+                }
+                actionref(ShowFlowFieldEntries_Promoted; ShowFlowFieldEntries)
+                {
+                }
+                actionref(ShowAllFlowFields_Promoted; ShowAllFlowFields)
+                {
+                }
+            }
+            group(Category_Navigate)
+            {
+                Caption = 'Navigate';
+
+                actionref(ShowIndexes_Promoted; ShowIndexes)
+                {
+                }
+            }
+        }
         area(Processing)
         {
             action(ViewSQLStatement)
@@ -172,13 +197,10 @@ page 50920 "LRQ Entries"
                 Caption = 'View SQL Statement';
                 Image = ViewDetails;
                 ToolTip = 'View the full SQL statement for this entry.';
-                Promoted = true;
-                PromotedCategory = Process;
-                PromotedIsBig = true;
 
                 trigger OnAction()
                 var
-                    LRQEntryCard: Page "LRQ Entry Card";
+                    LRQEntryCard: Page "DTC LRQ Entry Card";
                 begin
                     LRQEntryCard.SetRecord(Rec);
                     LRQEntryCard.RunModal();
@@ -190,13 +212,11 @@ page 50920 "LRQ Entries"
                 Caption = 'FlowField SubQueries';
                 Image = List;
                 ToolTip = 'View the FlowField subqueries for this entry.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    LRQFlowFieldEntry: Record "LRQ FlowField Entry";
-                    LRQFlowFieldEntries: Page "LRQ FlowField Entries";
+                    LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry";
+                    LRQFlowFieldEntries: Page "DTC LRQ FlowField Entries";
                 begin
                     LRQFlowFieldEntry.SetRange("LRQ Entry No.", Rec."Entry No.");
                     LRQFlowFieldEntries.SetTableView(LRQFlowFieldEntry);
@@ -209,12 +229,10 @@ page 50920 "LRQ Entries"
                 Caption = 'All FlowField SubQueries';
                 Image = AllLines;
                 ToolTip = 'View all FlowField subqueries.';
-                Promoted = true;
-                PromotedCategory = Process;
 
                 trigger OnAction()
                 var
-                    LRQFlowFieldEntries: Page "LRQ FlowField Entries";
+                    LRQFlowFieldEntries: Page "DTC LRQ FlowField Entries";
                 begin
                     LRQFlowFieldEntries.Run();
                 end;
@@ -228,13 +246,11 @@ page 50920 "LRQ Entries"
                 Caption = 'Show Table Indexes';
                 Image = Table;
                 ToolTip = 'Show the indexes for the related table.';
-                Promoted = true;
-                PromotedCategory = Category4;
 
                 trigger OnAction()
                 var
-                    IndexEntry: Record "Index Entry";
-                    IndexEntries: Page "Index Entries";
+                    IndexEntry: Record "DTC Index Entry";
+                    IndexEntries: Page "DTC Index Entries";
                 begin
                     IndexEntry.SetRange("Table ID", Rec."Table ID");
                     IndexEntries.SetTableView(IndexEntry);
@@ -246,12 +262,9 @@ page 50920 "LRQ Entries"
 
     var
         RowStyle: Text;
-        HasFlowFields: Boolean;
 
     trigger OnAfterGetRecord()
     begin
-        HasFlowFields := Rec."No. of FlowFields" > 0;
-
         case Rec."Isolation Level" of
             Rec."Isolation Level"::UpdLock:
                 RowStyle := 'Unfavorable'; // Red

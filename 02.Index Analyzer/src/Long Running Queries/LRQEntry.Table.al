@@ -3,7 +3,7 @@ namespace DefaultNamespace;
 using System.Reflection;
 using System.Utilities;
 
-table 50920 "LRQ Entry"
+table 50920 "DTC LRQ Entry"
 {
     DataClassification = SystemMetadata;
     Caption = 'Long Running Query Entry';
@@ -38,7 +38,7 @@ table 50920 "LRQ Entry"
             Caption = 'AL Table Name';
             Editable = false;
         }
-        field(6; "Isolation Level"; Enum "Isolation Level")
+        field(6; "Isolation Level"; Enum "DTC Isolation Level")
         {
             DataClassification = SystemMetadata;
             Caption = 'Isolation Level';
@@ -129,7 +129,7 @@ table 50920 "LRQ Entry"
         {
             DataClassification = SystemMetadata;
             Caption = 'Parent Entry No.';
-            TableRelation = "LRQ Entry"."Entry No.";
+            TableRelation = "DTC LRQ Entry"."Entry No.";
         }
         field(25; "FlowField Name"; Text[250])
         {

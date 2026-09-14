@@ -3,12 +3,12 @@ namespace DefaultNamespace;
 using System.Reflection;
 using System.Utilities;
 
-table 50926 "LRQ FlowField Entry"
+table 50926 "DTC LRQ FlowField Entry"
 {
     DataClassification = SystemMetadata;
     Caption = 'LRQ FlowField Entry';
-    LookupPageId = "LRQ FlowField Entries";
-    DrillDownPageId = "LRQ FlowField Entries";
+    LookupPageId = "DTC LRQ FlowField Entries";
+    DrillDownPageId = "DTC LRQ FlowField Entries";
 
     fields
     {
@@ -22,7 +22,7 @@ table 50926 "LRQ FlowField Entry"
         {
             DataClassification = SystemMetadata;
             Caption = 'LRQ Entry No.';
-            TableRelation = "LRQ Entry"."Entry No.";
+            TableRelation = "DTC LRQ Entry"."Entry No.";
         }
         field(3; "Table ID"; Integer)
         {
@@ -51,7 +51,7 @@ table 50926 "LRQ FlowField Entry"
             DataClassification = SystemMetadata;
             Caption = 'Sub Query Alias';
         }
-        field(8; "Isolation Level"; Enum "Isolation Level")
+        field(8; "Isolation Level"; Enum "DTC Isolation Level")
         {
             DataClassification = SystemMetadata;
             Caption = 'Isolation Level';

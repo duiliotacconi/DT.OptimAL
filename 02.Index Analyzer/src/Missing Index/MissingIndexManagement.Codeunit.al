@@ -3,7 +3,7 @@ namespace DefaultNamespace;
 using System.IO;
 using System.Reflection;
 
-codeunit 50925 "Missing Index Management"
+codeunit 50925 "DTC Missing Index Management"
 {
     /// <summary>
     /// Imports missing index data from Excel file.
@@ -11,7 +11,7 @@ codeunit 50925 "Missing Index Management"
     procedure ImportFromExcel(): Integer
     var
         TempExcelBuffer: Record "Excel Buffer" temporary;
-        MissingIndex: Record "Missing Index";
+        MissingIndex: Record "DTC Missing Index";
         ColumnMap: Dictionary of [Text, Integer];
         InStr: InStream;
         FileName: Text;
@@ -19,7 +19,7 @@ codeunit 50925 "Missing Index Management"
         RowNo: Integer;
         TotalRows: Integer;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Importing Missing Indexes...\Row: #1#### of #2####';
+        ProgressMsg: Label 'Importing Missing Indexes...\Row: #1#### of #2####', Comment = '#1 = Current row number, #2 = Total rows';
         NoDataErr: Label 'No data found in the Excel file.';
         SelectFileLbl: Label 'Select Missing Indexes Excel file';
         SelectionChoice: Integer;
@@ -110,7 +110,7 @@ codeunit 50925 "Missing Index Management"
             until TempExcelBuffer.Next() = 0;
     end;
 
-    local procedure CreateMissingIndexFromExcelRow(var TempExcelBuffer: Record "Excel Buffer" temporary; var MissingIndex: Record "Missing Index"; RowNo: Integer; var ColumnMap: Dictionary of [Text, Integer])
+    local procedure CreateMissingIndexFromExcelRow(var TempExcelBuffer: Record "Excel Buffer" temporary; var MissingIndex: Record "DTC Missing Index"; RowNo: Integer; var ColumnMap: Dictionary of [Text, Integer])
     var
         SQLTableName: Text[250];
         ExtensionIdText: Text;
@@ -210,7 +210,7 @@ codeunit 50925 "Missing Index Management"
         exit('');
     end;
 
-    local procedure MatchTableName(var MissingIndex: Record "Missing Index"; SQLTableName: Text)
+    local procedure MatchTableName(var MissingIndex: Record "DTC Missing Index"; SQLTableName: Text)
     var
         AllObj: Record AllObjWithCaption;
         NormalizedSQLName: Text;
@@ -244,12 +244,9 @@ codeunit 50925 "Missing Index Management"
     local procedure ExtractTableNameFromVSIFT(SQLTableName: Text; var IsVSIFT: Boolean; var VSIFTKey: Integer): Text
     var
         VSIFTPos: Integer;
-        KeyPos: Integer;
         TableName: Text;
         KeyText: Text;
         Parts: List of [Text];
-        PartText: Text;
-        i: Integer;
     begin
         IsVSIFT := false;
         VSIFTKey := 0;
@@ -276,25 +273,24 @@ codeunit 50925 "Missing Index Management"
         // If we have multiple parts, we need to identify which is the table name
         // The table name is typically not a GUID (extension ID) and not a company prefix
         // Strategy: Find the part that looks like a table name (not GUID, not company prefix)
-        if Parts.Count() = 1 then
-            exit(Parts.Get(1))
-        else if Parts.Count() = 2 then begin
-            // Could be: CompanyPrefix$TableName or TableName$ExtensionId
-            // Check if second part is a GUID (extension ID)
-            if IsGuid(Parts.Get(2)) then
-                exit(Parts.Get(1)) // First part is table name
+        case Parts.Count() of
+            1:
+                exit(Parts.Get(1));
+            2:
+                // Could be: CompanyPrefix$TableName or TableName$ExtensionId
+                // Check if second part is a GUID (extension ID)
+                if IsGuid(Parts.Get(2)) then
+                    exit(Parts.Get(1)) // First part is table name
+                else
+                    exit(Parts.Get(2)); // Second part is table name (first was company prefix)
             else
-                exit(Parts.Get(2)); // Second part is table name (first was company prefix)
-        end else if Parts.Count() >= 3 then begin
-            // CompanyPrefix$TableName$ExtensionId - table name is the second part
-            // But we need to check if second is GUID, then first is table name
-            if IsGuid(Parts.Get(2)) then
-                exit(Parts.Get(1))
-            else
-                exit(Parts.Get(2));
+                // CompanyPrefix$TableName$ExtensionId - table name is the second part
+                // But we need to check if second is GUID, then first is table name
+                if IsGuid(Parts.Get(2)) then
+                    exit(Parts.Get(1))
+                else
+                    exit(Parts.Get(2));
         end;
-
-        exit(TableName);
     end;
 
     local procedure SplitString(InputString: Text; Delimiter: Char; var Parts: List of [Text])
@@ -497,10 +493,9 @@ codeunit 50925 "Missing Index Management"
             exit(0);
 
         FieldCount := 1;
-        for i := 1 to StrLen(FieldList) do begin
+        for i := 1 to StrLen(FieldList) do
             if FieldList[i] = ',' then
                 FieldCount += 1;
-        end;
         exit(FieldCount);
     end;
 
@@ -523,10 +518,10 @@ codeunit 50925 "Missing Index Management"
     /// <summary>
     /// Calculates selectivity for a single Missing Index entry.
     /// </summary>
-    procedure CalculateSelectivity(var MissingIndex: Record "Missing Index")
+    procedure CalculateSelectivity(var MissingIndex: Record "DTC Missing Index")
     var
-        IndexSelectivity: Record "Index Selectivity";
-        IndexDetail: Record "Index Detail";
+        IndexSelectivity: Record "DTC Index Selectivity";
+        IndexDetail: Record "DTC Index Detail";
         RecRef: RecordRef;
         FieldRef: FieldRef;
         EqualityFieldList: List of [Text];
@@ -546,15 +541,14 @@ codeunit 50925 "Missing Index Management"
         FieldPosition: Integer;
         SelectivityValue: Decimal;
         SuggestedIndex: Text;
-        SortedSelectivities: List of [Decimal];
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating Selectivity...\Phase: #1##############################\Progress: #2#### / #3####';
+        ProgressMsg: Label 'Calculating Selectivity...\Phase: #1##############################\Progress: #2#### / #3####', Comment = '#1 = Phase description, #2 = Current progress, #3 = Total count';
     begin
         if MissingIndex."Table ID" = 0 then
             exit;
 
         // Delete existing selectivity records for this missing index
-        IndexSelectivity.SetRange("Source Type", "Index Source Type"::"Missing Index");
+        IndexSelectivity.SetRange("Source Type", "DTC Index Source Type"::"Missing Index");
         IndexSelectivity.SetRange("Missing Index Entry No.", MissingIndex."Entry No.");
         if IndexSelectivity.FindSet() then
             repeat
@@ -601,7 +595,7 @@ codeunit 50925 "Missing Index Management"
                 if (CurrentRow mod 1000) = 0 then
                     ProgressDialog.Update(2, CurrentRow);
 
-                foreach FieldNo in AllFieldNumbers do begin
+                foreach FieldNo in AllFieldNumbers do
                     if RecRef.FieldExist(FieldNo) then begin
                         FieldRef := RecRef.Field(FieldNo);
                         FieldValue := Format(FieldRef.Value);
@@ -613,7 +607,6 @@ codeunit 50925 "Missing Index Management"
                             TempFieldDict.Set(FieldValue, TempFieldDict.Get(FieldValue) + 1);
                         FieldDistinctValues.Set(FieldNo, TempFieldDict);
                     end;
-                end;
             until RecRef.Next() = 0;
 
         ProgressDialog.Update(2, TotalRows);
@@ -650,21 +643,20 @@ codeunit 50925 "Missing Index Management"
                 CreateMissingIndexSelectivityRecord(
                     IndexSelectivity,
                     MissingIndex,
-                    "Selectivity Type"::Field,
+                    "DTC Selectivity Type"::Field,
                     FieldNo,
-                    FieldName,
+                    CopyStr(FieldName, 1, 250),
                     FieldPosition,
                     DistinctCount,
-                    TotalRows,
-                    true // IsEquality
+                    TotalRows
                 );
 
                 // Create bucket histogram
                 CreateBucketHistogramForMissingIndex(
                     MissingIndex."Entry No.",
-                    "Selectivity Type"::Field,
+                    "DTC Selectivity Type"::Field,
                     FieldNo,
-                    FieldName,
+                    CopyStr(FieldName, 1, 250),
                     TempFieldDict
                 );
             end;
@@ -691,21 +683,20 @@ codeunit 50925 "Missing Index Management"
                 CreateMissingIndexSelectivityRecord(
                     IndexSelectivity,
                     MissingIndex,
-                    "Selectivity Type"::Field,
+                    "DTC Selectivity Type"::Field,
                     FieldNo,
-                    FieldName,
+                    CopyStr(FieldName, 1, 250),
                     FieldPosition,
                     DistinctCount,
-                    TotalRows,
-                    false // IsEquality
+                    TotalRows
                 );
 
                 // Create bucket histogram
                 CreateBucketHistogramForMissingIndex(
                     MissingIndex."Entry No.",
-                    "Selectivity Type"::Field,
+                    "DTC Selectivity Type"::Field,
                     FieldNo,
-                    FieldName,
+                    CopyStr(FieldName, 1, 250),
                     TempFieldDict
                 );
             end;
@@ -718,13 +709,12 @@ codeunit 50925 "Missing Index Management"
         CreateMissingIndexSelectivityRecord(
             IndexSelectivity,
             MissingIndex,
-            "Selectivity Type"::Index,
+            "DTC Selectivity Type"::Index,
             0,
             'Suggested Index: ' + CopyStr(SuggestedIndex, 1, 220),
             0,
             0,
-            TotalRows,
-            true
+            TotalRows
         );
 
         // Update the Missing Index with suggested index
@@ -742,16 +732,16 @@ codeunit 50925 "Missing Index Management"
     /// </summary>
     procedure CalculateSelectivityForTable(TableID: Integer): Integer
     var
-        MissingIndex: Record "Missing Index";
-        IndexSelectivity: Record "Index Selectivity";
-        IndexDetail: Record "Index Detail";
+        MissingIndex: Record "DTC Missing Index";
+        IndexSelectivity: Record "DTC Index Selectivity";
+        IndexDetail: Record "DTC Index Detail";
         RecRef: RecordRef;
         FieldRef: FieldRef;
         // Data structures for single-pass processing
         AllFieldNumbers: List of [Integer];                                                     // Unique field numbers across all missing indexes
         AllFieldNames: Dictionary of [Integer, Text];                                           // Field No -> Field Name
         FieldDistinctValues: Dictionary of [Integer, Dictionary of [Text, Integer]];            // Field No -> (Value -> Count)
-        MissingIndexFields: Dictionary of [Integer, List of [Integer]];                         // Missing Index Entry No -> List of field numbers
+
         MissingIndexEqualityFields: Dictionary of [Integer, List of [Text]];                    // Missing Index Entry No -> Equality field names
         MissingIndexInequalityFields: Dictionary of [Integer, List of [Text]];                  // Missing Index Entry No -> Inequality field names
         TempFieldDict: Dictionary of [Text, Integer];
@@ -770,7 +760,7 @@ codeunit 50925 "Missing Index Management"
         ProcessedCount: Integer;
         SuggestedIndex: Text;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating Selectivity for Table...\Phase: #1##############################\Progress: #2#### / #3####';
+        ProgressMsg: Label 'Calculating Selectivity for Table...\Phase: #1##############################\Progress: #2#### / #3####', Comment = '#1 = Phase description, #2 = Current progress, #3 = Total count';
     begin
         MissingIndex.SetRange("Table ID", TableID);
         if MissingIndex.IsEmpty() then
@@ -785,7 +775,7 @@ codeunit 50925 "Missing Index Management"
         if MissingIndex.FindSet() then
             repeat
                 // Delete existing selectivity and detail records
-                IndexSelectivity.SetRange("Source Type", "Index Source Type"::"Missing Index");
+                IndexSelectivity.SetRange("Source Type", "DTC Index Source Type"::"Missing Index");
                 IndexSelectivity.SetRange("Missing Index Entry No.", MissingIndex."Entry No.");
                 if IndexSelectivity.FindSet() then
                     repeat
@@ -850,7 +840,7 @@ codeunit 50925 "Missing Index Management"
                     ProgressDialog.Update(2, CurrentRow);
 
                 // Collect values for ALL fields in a single record read
-                foreach FieldNo in AllFieldNumbers do begin
+                foreach FieldNo in AllFieldNumbers do
                     if RecRef.FieldExist(FieldNo) then begin
                         FieldRef := RecRef.Field(FieldNo);
                         FieldValue := Format(FieldRef.Value);
@@ -862,7 +852,6 @@ codeunit 50925 "Missing Index Management"
                             TempFieldDict.Set(FieldValue, TempFieldDict.Get(FieldValue) + 1);
                         FieldDistinctValues.Set(FieldNo, TempFieldDict);
                     end;
-                end;
             until RecRef.Next() = 0;
 
         ProgressDialog.Update(2, TotalRows);
@@ -897,21 +886,20 @@ codeunit 50925 "Missing Index Management"
                         CreateMissingIndexSelectivityRecord(
                             IndexSelectivity,
                             MissingIndex,
-                            "Selectivity Type"::Field,
+                            "DTC Selectivity Type"::Field,
                             FieldNo,
-                            FieldName,
+                            CopyStr(FieldName, 1, 250),
                             FieldPosition,
                             DistinctCount,
-                            TotalRows,
-                            true // IsEquality
+                            TotalRows
                         );
 
                         // Create bucket histogram
                         CreateBucketHistogramForMissingIndex(
                             MissingIndex."Entry No.",
-                            "Selectivity Type"::Field,
+                            "DTC Selectivity Type"::Field,
                             FieldNo,
-                            FieldName,
+                            CopyStr(FieldName, 1, 250),
                             TempFieldDict
                         );
                     end;
@@ -932,20 +920,19 @@ codeunit 50925 "Missing Index Management"
                         CreateMissingIndexSelectivityRecord(
                             IndexSelectivity,
                             MissingIndex,
-                            "Selectivity Type"::Field,
+                            "DTC Selectivity Type"::Field,
                             FieldNo,
-                            FieldName,
+                            CopyStr(FieldName, 1, 250),
                             FieldPosition,
                             DistinctCount,
-                            TotalRows,
-                            false // IsEquality
+                            TotalRows
                         );
 
                         CreateBucketHistogramForMissingIndex(
                             MissingIndex."Entry No.",
-                            "Selectivity Type"::Field,
+                            "DTC Selectivity Type"::Field,
                             FieldNo,
-                            FieldName,
+                            CopyStr(FieldName, 1, 250),
                             TempFieldDict
                         );
                     end;
@@ -958,13 +945,12 @@ codeunit 50925 "Missing Index Management"
                 CreateMissingIndexSelectivityRecord(
                     IndexSelectivity,
                     MissingIndex,
-                    "Selectivity Type"::Index,
+                    "DTC Selectivity Type"::Index,
                     0,
                     'Suggested Index: ' + CopyStr(SuggestedIndex, 1, 220),
                     0,
                     0,
-                    TotalRows,
-                    true
+                    TotalRows
                 );
 
                 // Update the Missing Index
@@ -986,7 +972,7 @@ codeunit 50925 "Missing Index Management"
         FieldNo: Integer;
         i: Integer;
     begin
-        foreach FieldName in FieldNameList do begin
+        foreach FieldName in FieldNameList do
             // Find field number by name
             for i := 1 to RecRef.FieldCount() do begin
                 FieldRef := RecRef.FieldIndex(i);
@@ -1001,7 +987,6 @@ codeunit 50925 "Missing Index Management"
                     break;
                 end;
             end;
-        end;
     end;
 
     local procedure GetFieldNoByNameFromDict(AllFieldNames: Dictionary of [Integer, Text]; FieldName: Text): Integer
@@ -1028,7 +1013,6 @@ codeunit 50925 "Missing Index Management"
         SuggestedIndex: Text;
         SortedSelectivities: List of [Decimal];
         UsedFieldNos: List of [Integer];
-        i: Integer;
     begin
         // Calculate selectivity for each equality field
         foreach FieldName in EqualityFieldList do begin
@@ -1055,7 +1039,7 @@ codeunit 50925 "Missing Index Management"
 
         // Build suggested index from sorted equality fields
         SuggestedIndex := '';
-        foreach SelectivityValue in SortedSelectivities do begin
+        foreach SelectivityValue in SortedSelectivities do
             if FieldNoBySelectivity.ContainsKey(SelectivityValue) then begin
                 FieldNo := FieldNoBySelectivity.Get(SelectivityValue);
                 if not UsedFieldNos.Contains(FieldNo) then begin
@@ -1065,7 +1049,6 @@ codeunit 50925 "Missing Index Management"
                     SuggestedIndex += FieldNameByNo.Get(FieldNo);
                 end;
             end;
-        end;
 
         // Add inequality fields at the end (not sorted by selectivity)
         foreach FieldName in InequalityFieldList do begin
@@ -1105,13 +1088,13 @@ codeunit 50925 "Missing Index Management"
     /// </summary>
     procedure CalculateSelectivityForAll(): Integer
     var
-        MissingIndex: Record "Missing Index";
+        MissingIndex: Record "DTC Missing Index";
         TableIDList: List of [Integer];
         TableID: Integer;
         ProcessedCount: Integer;
         TableCount: Integer;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating Selectivity for All Missing Indexes...\Table: #1#### / #2#### - #3##################';
+        ProgressMsg: Label 'Calculating Selectivity for All Missing Indexes...\Table: #1#### / #2#### - #3##################', Comment = '#1 = Current table number, #2 = Total tables, #3 = Table name';
     begin
         // Collect distinct Table IDs
         MissingIndex.SetFilter("Table ID", '>0');
@@ -1164,7 +1147,7 @@ codeunit 50925 "Missing Index Management"
         TempFieldDict: Dictionary of [Text, Integer];
         i: Integer;
     begin
-        foreach FieldName in FieldNames do begin
+        foreach FieldName in FieldNames do
             // Find field by name
             for i := 1 to RecRef.FieldCount do begin
                 FieldRef := RecRef.FieldIndex(i);
@@ -1179,7 +1162,6 @@ codeunit 50925 "Missing Index Management"
                     break;
                 end;
             end;
-        end;
     end;
 
     local procedure GetFieldNoByName(var FieldNameByNo: Dictionary of [Integer, Text]; FieldName: Text): Integer
@@ -1206,7 +1188,6 @@ codeunit 50925 "Missing Index Management"
     ): Text
     var
         TempFieldDict: Dictionary of [Text, Integer];
-        SelectivityList: List of [Decimal];
         FieldSelectivity: Dictionary of [Text, Decimal];
         FieldName: Text;
         FieldNo: Integer;
@@ -1215,7 +1196,6 @@ codeunit 50925 "Missing Index Management"
         SuggestedIndex: Text;
         SortedFields: List of [Text];
         i, j : Integer;
-        TempSelectivity: Decimal;
         TempName: Text;
     begin
         // Calculate selectivity for each equality field
@@ -1238,13 +1218,12 @@ codeunit 50925 "Missing Index Management"
 
         // Sort equality fields by selectivity (descending - most selective first)
         for i := 1 to SortedFields.Count - 1 do
-            for j := i + 1 to SortedFields.Count do begin
+            for j := i + 1 to SortedFields.Count do
                 if FieldSelectivity.Get(SortedFields.Get(j)) > FieldSelectivity.Get(SortedFields.Get(i)) then begin
                     TempName := SortedFields.Get(i);
                     SortedFields.Set(i, SortedFields.Get(j));
                     SortedFields.Set(j, TempName);
                 end;
-            end;
 
         // Build suggested index from sorted equality fields
         SuggestedIndex := '';
@@ -1277,13 +1256,12 @@ codeunit 50925 "Missing Index Management"
 
         // Sort inequality fields by selectivity (descending)
         for i := 1 to SortedFields.Count - 1 do
-            for j := i + 1 to SortedFields.Count do begin
+            for j := i + 1 to SortedFields.Count do
                 if FieldSelectivity.Get(SortedFields.Get(j)) > FieldSelectivity.Get(SortedFields.Get(i)) then begin
                     TempName := SortedFields.Get(i);
                     SortedFields.Set(i, SortedFields.Get(j));
                     SortedFields.Set(j, TempName);
                 end;
-            end;
 
         // Append inequality fields
         foreach FieldName in SortedFields do begin
@@ -1296,20 +1274,19 @@ codeunit 50925 "Missing Index Management"
     end;
 
     local procedure CreateMissingIndexSelectivityRecord(
-        var IndexSelectivity: Record "Index Selectivity";
-        MissingIndex: Record "Missing Index";
-        SelectivityType: Enum "Selectivity Type";
-        FieldNo: Integer;
-        FieldName: Text[250];
-        FieldPosition: Integer;
-        DistinctValues: Integer;
-        TotalRows: Integer;
-        IsEquality: Boolean
+        var IndexSelectivity: Record "DTC Index Selectivity";
+        MissingIndex: Record "DTC Missing Index";
+        SelectivityType: Enum "DTC Selectivity Type";
+                             FieldNo: Integer;
+                             FieldName: Text[250];
+                             FieldPosition: Integer;
+                             DistinctValues: Integer;
+                             TotalRows: Integer
     )
     begin
         Clear(IndexSelectivity);
         IndexSelectivity.Init();
-        IndexSelectivity."Source Type" := "Index Source Type"::"Missing Index";
+        IndexSelectivity."Source Type" := "DTC Index Source Type"::"Missing Index";
         IndexSelectivity."Missing Index Entry No." := MissingIndex."Entry No.";
         IndexSelectivity."Index Entry No." := 0;
         IndexSelectivity."Table ID" := MissingIndex."Table ID";
@@ -1338,13 +1315,13 @@ codeunit 50925 "Missing Index Management"
 
     local procedure CreateBucketHistogramForMissingIndex(
         MissingIndexEntryNo: Integer;
-        SelectivityType: Enum "Selectivity Type";
-        FieldNo: Integer;
-        FieldName: Text[250];
+        SelectivityType: Enum "DTC Selectivity Type";
+                             FieldNo: Integer;
+                             FieldName: Text[250];
         var ValuesDict: Dictionary of [Text, Integer]
     )
     var
-        IndexDetail: Record "Index Detail";
+        IndexDetail: Record "DTC Index Detail";
         BucketDict: Dictionary of [Integer, Integer];
         ValueKey: Text;
         ValueKeys: List of [Text];

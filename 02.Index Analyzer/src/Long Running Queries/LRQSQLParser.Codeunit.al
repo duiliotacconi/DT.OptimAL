@@ -3,7 +3,7 @@ namespace DefaultNamespace;
 using System.Reflection;
 using System.Utilities;
 
-codeunit 50923 "LRQ SQL Parser"
+codeunit 50923 "DTC LRQ SQL Parser"
 {
     /// <summary>
     /// Parses SQL statement and populates the LRQ Entry fields.
@@ -13,10 +13,10 @@ codeunit 50923 "LRQ SQL Parser"
     /// - Number of FlowFields (OUTER APPLY count)
     /// - Equality and Inequality fields from WHERE clause
     /// </summary>
-    procedure ParseSQLStatement(var LRQEntry: Record "LRQ Entry"; SQLStatement: Text)
+    procedure ParseSQLStatement(var LRQEntry: Record "DTC LRQ Entry"; SQLStatement: Text)
     var
         TableName: Text;
-        IsolationLevel: Enum "Isolation Level";
+        IsolationLevel: Enum "DTC Isolation Level";
         EqualityFields: Text;
         InequalityFields: Text;
         FlowFieldCount: Integer;
@@ -47,9 +47,9 @@ codeunit 50923 "LRQ SQL Parser"
     /// <summary>
     /// Extracts and creates FlowField subquery entries from OUTER APPLY clauses.
     /// </summary>
-    procedure CreateFlowFieldEntries(ParentLRQEntry: Record "LRQ Entry"; SQLStatement: Text)
+    procedure CreateFlowFieldEntries(ParentLRQEntry: Record "DTC LRQ Entry"; SQLStatement: Text)
     var
-        LRQFlowFieldEntry: Record "LRQ FlowField Entry";
+        LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry";
         OuterApplyList: List of [Text];
         OuterApplySql: Text;
         SubQueryAlias: Text;
@@ -86,7 +86,7 @@ codeunit 50923 "LRQ SQL Parser"
             LRQFlowFieldEntry."Isolation Level" := ExtractIsolationLevel(OuterApplySql);
 
             // Extract WHERE clause fields from subquery
-            ExtractSubQueryWhereFields(OuterApplySql, SubQueryTable, EqualityFields, InequalityFields);
+            ExtractSubQueryWhereFields(OuterApplySql, EqualityFields, InequalityFields);
             LRQFlowFieldEntry."Equality Fields" := CopyStr(EqualityFields, 1, 1000);
             LRQFlowFieldEntry."Inequality Fields" := CopyStr(InequalityFields, 1, 1000);
             LRQFlowFieldEntry."No. of Equality Fields" := CountFieldsInList(EqualityFields);
@@ -117,40 +117,39 @@ codeunit 50923 "LRQ SQL Parser"
     /// <summary>
     /// Extracts isolation level from SQL statement (e.g., WITH(READUNCOMMITTED), WITH(READCOMMITTED), WITH(UPDLOCK))
     /// </summary>
-    procedure ExtractIsolationLevel(SQLStatement: Text): Enum "Isolation Level"
+    procedure ExtractIsolationLevel(SQLStatement: Text): Enum "DTC Isolation Level"
     var
         UpperSQL: Text;
-        Pos: Integer;
     begin
         UpperSQL := UpperCase(SQLStatement);
 
         // Check for WITH hints in order of specificity
         if StrPos(UpperSQL, 'WITH(UPDLOCK') > 0 then
-            exit("Isolation Level"::UpdLock);
+            exit("DTC Isolation Level"::UpdLock);
 
         if StrPos(UpperSQL, 'WITH(REPEATABLEREAD') > 0 then
-            exit("Isolation Level"::RepeatableRead);
+            exit("DTC Isolation Level"::RepeatableRead);
 
         if StrPos(UpperSQL, 'WITH(READCOMMITTED') > 0 then
-            exit("Isolation Level"::ReadCommitted);
+            exit("DTC Isolation Level"::ReadCommitted);
 
         if StrPos(UpperSQL, 'WITH(READUNCOMMITTED') > 0 then
-            exit("Isolation Level"::ReadUncommitted);
+            exit("DTC Isolation Level"::ReadUncommitted);
 
         // Check without parentheses format
         if StrPos(UpperSQL, 'WITH UPDLOCK') > 0 then
-            exit("Isolation Level"::UpdLock);
+            exit("DTC Isolation Level"::UpdLock);
 
         if StrPos(UpperSQL, 'REPEATABLEREAD') > 0 then
-            exit("Isolation Level"::RepeatableRead);
+            exit("DTC Isolation Level"::RepeatableRead);
 
         if StrPos(UpperSQL, 'READCOMMITTED') > 0 then
-            exit("Isolation Level"::ReadCommitted);
+            exit("DTC Isolation Level"::ReadCommitted);
 
         if StrPos(UpperSQL, 'READUNCOMMITTED') > 0 then
-            exit("Isolation Level"::ReadUncommitted);
+            exit("DTC Isolation Level"::ReadUncommitted);
 
-        exit("Isolation Level"::Default);
+        exit("DTC Isolation Level"::Default);
     end;
 
     /// <summary>
@@ -161,7 +160,6 @@ codeunit 50923 "LRQ SQL Parser"
     var
         FromPos: Integer;
         TableStart: Integer;
-        TableEnd: Integer;
         TableFullName: Text;
         TableName: Text;
         UpperSQL: Text;
@@ -187,8 +185,7 @@ codeunit 50923 "LRQ SQL Parser"
 
     local procedure ExtractTableFromPosition(SQLStatement: Text; StartPos: Integer): Text
     var
-        QuoteStart: Integer;
-        QuoteEnd: Integer;
+        StartIdx: Integer;
         TablePart: Text;
         SubStr: Text;
         i: Integer;
@@ -214,10 +211,10 @@ codeunit 50923 "LRQ SQL Parser"
             exit(TablePart);
         end else begin
             // Unquoted table name - find end (space, WITH, AS)
-            QuoteStart := i;
+            StartIdx := i;
             while (i <= StrLen(SubStr)) and (SubStr[i] <> ' ') do
                 i += 1;
-            exit(CopyStr(SubStr, QuoteStart, i - QuoteStart));
+            exit(CopyStr(SubStr, StartIdx, i - StartIdx));
         end;
     end;
 
@@ -225,7 +222,6 @@ codeunit 50923 "LRQ SQL Parser"
     var
         Segments: List of [Text];
         Segment: Text;
-        Result: Text;
         InQuote: Boolean;
         CurrentSegment: Text;
         i: Integer;
@@ -258,7 +254,8 @@ codeunit 50923 "LRQ SQL Parser"
                     InQuote := true;
                     CurrentSegment := '';
                 end;
-            end else if InQuote then
+            end else
+                if InQuote then
                     CurrentSegment += Format(c);
         end;
 
@@ -305,13 +302,12 @@ codeunit 50923 "LRQ SQL Parser"
         end;
 
         // Handle WITH with variable whitespace (e.g., "  WITH(" or " WITH(")
-        for i := 1 to StrLen(UpperSQL) - 4 do begin
+        for i := 1 to StrLen(UpperSQL) - 4 do
             if (UpperSQL[i] = ' ') and (CopyStr(UpperSQL, i + 1, 4) = 'WITH') then begin
                 if (MinPos = 0) or (i < MinPos) then
                     MinPos := i;
                 break;
             end;
-        end;
 
         exit(MinPos);
     end;
@@ -321,7 +317,6 @@ codeunit 50923 "LRQ SQL Parser"
     /// </summary>
     local procedure ExtractTableNameFromFullPath(FullPath: Text): Text
     var
-        Parts: List of [Text];
         TablePart: Text;
         DollarPos1: Integer;
         DollarPos2: Integer;
@@ -466,9 +461,6 @@ codeunit 50923 "LRQ SQL Parser"
         UpperSQL: Text;
         FromPos: Integer;
         AsPos: Integer;
-        WithPos: Integer;
-        AliasStart: Integer;
-        AliasEnd: Integer;
         QuoteStart: Integer;
         QuoteEnd: Integer;
         SubStr: Text;
@@ -526,12 +518,11 @@ codeunit 50923 "LRQ SQL Parser"
         MinPos := 0;
 
         // Find WITH (handle variable whitespace before it)
-        for i := 1 to StrLen(UpperSQL) - 4 do begin
+        for i := 1 to StrLen(UpperSQL) - 4 do
             if (SQLPart[i] = ' ') and (UpperCase(CopyStr(SQLPart, i + 1, 4)) = 'WITH') then begin
                 MinPos := i;
                 break;
             end;
-        end;
 
         // Also check for WHERE
         Pos := StrPos(UpperSQL, ' WHERE ');
@@ -570,7 +561,6 @@ codeunit 50923 "LRQ SQL Parser"
         EqualityList: List of [Text];
         InequalityList: List of [Text];
         AliasPrefix: Text;
-        i: Integer;
     begin
         if TableAlias <> '' then
             AliasPrefix := '"' + TableAlias + '".'
@@ -592,15 +582,14 @@ codeunit 50923 "LRQ SQL Parser"
                     continue;
 
             // Extract field and operator
-            if ExtractFieldAndOperator(Condition, AliasPrefix, FieldName, Operator) then begin
+            if ExtractFieldAndOperator(Condition, AliasPrefix, FieldName, Operator) then
                 if IsEqualityOperator(Operator) then begin
                     if not EqualityList.Contains(FieldName) then
                         EqualityList.Add(FieldName);
-                end else if IsInequalityOperator(Operator) then begin
-                    if not InequalityList.Contains(FieldName) then
-                        InequalityList.Add(FieldName);
-                end;
-            end;
+                end else
+                    if IsInequalityOperator(Operator) then
+                        if not InequalityList.Contains(FieldName) then
+                            InequalityList.Add(FieldName);
         end;
 
         // Build comma-separated strings
@@ -610,10 +599,6 @@ codeunit 50923 "LRQ SQL Parser"
 
     local procedure SplitConditions(WhereClause: Text; var Conditions: List of [Text])
     var
-        UpperWhere: Text;
-        AndPos: Integer;
-        OrPos: Integer;
-        CurrentPos: Integer;
         ConditionStart: Integer;
         ParenDepth: Integer;
         i: Integer;
@@ -633,22 +618,24 @@ codeunit 50923 "LRQ SQL Parser"
 
             if c = '''' then
                 InString := not InString
-            else if not InString then begin
-                if c = '(' then
-                    ParenDepth += 1
-                else if c = ')' then
-                    ParenDepth -= 1
-                else if (ParenDepth = 0) and (i + 4 <= StrLen(WhereClause)) then begin
-                    // Check for " AND "
-                    if UpperCase(CopyStr(WhereClause, i, 5)) = ' AND ' then begin
-                        CurrentCondition := CopyStr(WhereClause, ConditionStart, i - ConditionStart);
-                        CurrentCondition := DelChr(CurrentCondition, '<>', ' ()');
-                        if CurrentCondition <> '' then
-                            Conditions.Add(CurrentCondition);
-                        ConditionStart := i + 5;
+            else
+                if not InString then
+                    case c of
+                        '(':
+                            ParenDepth += 1;
+                        ')':
+                            ParenDepth -= 1;
+                        else
+                            if (ParenDepth = 0) and (i + 4 <= StrLen(WhereClause)) then
+                                // Check for " AND "
+                                if UpperCase(CopyStr(WhereClause, i, 5)) = ' AND ' then begin
+                                    CurrentCondition := CopyStr(WhereClause, ConditionStart, i - ConditionStart);
+                                    CurrentCondition := DelChr(CurrentCondition, '<>', ' ()');
+                                    if CurrentCondition <> '' then
+                                        Conditions.Add(CurrentCondition);
+                                    ConditionStart := i + 5;
+                                end;
                     end;
-                end;
-            end;
         end;
 
         // Add last condition
@@ -660,10 +647,7 @@ codeunit 50923 "LRQ SQL Parser"
 
     local procedure ExtractFieldAndOperator(Condition: Text; AliasPrefix: Text; var FieldName: Text; var Operator: Text): Boolean
     var
-        QuoteStart: Integer;
-        QuoteEnd: Integer;
         OpPos: Integer;
-        FieldWithAlias: Text;
         SubStr: Text;
     begin
         FieldName := '';
@@ -732,7 +716,6 @@ codeunit 50923 "LRQ SQL Parser"
     local procedure ExtractFromISNULL(Text: Text): Text
     var
         StartPos: Integer;
-        EndPos: Integer;
         ParenDepth: Integer;
         i: Integer;
     begin
@@ -743,19 +726,21 @@ codeunit 50923 "LRQ SQL Parser"
         StartPos := StartPos + 7; // Skip "ISNULL("
         ParenDepth := 1;
 
-        for i := StartPos to StrLen(Text) do begin
-            if Text[i] = '(' then
-                ParenDepth += 1
-            else if Text[i] = ')' then
-                ParenDepth -= 1
-            else if (Text[i] = ',') and (ParenDepth = 1) then begin
-                // First comma at depth 1 ends the field reference
-                exit(CopyStr(Text, StartPos, i - StartPos));
+        for i := StartPos to StrLen(Text) do
+            case Text[i] of
+                '(':
+                    ParenDepth += 1;
+                ')':
+                    begin
+                        ParenDepth -= 1;
+                        if ParenDepth = 0 then
+                            exit(CopyStr(Text, StartPos, i - StartPos));
+                    end;
+                ',':
+                    if ParenDepth = 1 then
+                        // First comma at depth 1 ends the field reference
+                        exit(CopyStr(Text, StartPos, i - StartPos));
             end;
-
-            if ParenDepth = 0 then
-                exit(CopyStr(Text, StartPos, i - StartPos));
-        end;
 
         exit(CopyStr(Text, StartPos));
     end;
@@ -801,10 +786,9 @@ codeunit 50923 "LRQ SQL Parser"
         Functions.Add('MIN(');
         Functions.Add('MAX(');
 
-        foreach Func in Functions do begin
+        foreach Func in Functions do
             if StrPos(UpperSQL, Func) > 0 then
                 exit(CopyStr(Func, 1, StrLen(Func) - 1)); // Remove opening paren
-        end;
 
         exit('');
     end;
@@ -843,17 +827,17 @@ codeunit 50923 "LRQ SQL Parser"
 
                     // Find matching closing parenthesis
                     ParenDepth := 1;
-                    for i := SubQueryStart + 1 to StrLen(SQLStatement) do begin
+                    for i := SubQueryStart + 1 to StrLen(SQLStatement) do
                         if SQLStatement[i] = '(' then
                             ParenDepth += 1
-                        else if SQLStatement[i] = ')' then begin
-                            ParenDepth -= 1;
-                            if ParenDepth = 0 then begin
-                                SubQueryEnd := i;
-                                break;
+                        else
+                            if SQLStatement[i] = ')' then begin
+                                ParenDepth -= 1;
+                                if ParenDepth = 0 then begin
+                                    SubQueryEnd := i;
+                                    break;
+                                end;
                             end;
-                        end;
-                    end;
 
                     if SubQueryEnd > SubQueryStart then begin
                         // Extract including the AS alias after the closing paren
@@ -907,10 +891,9 @@ codeunit 50923 "LRQ SQL Parser"
 
                 if (i <= StrLen(SubStr)) and (SubStr[i] = '"') then begin
                     AliasEnd := StrPos(CopyStr(SubStr, i + 1), '"');
-                    if AliasEnd > 0 then begin
+                    if AliasEnd > 0 then
                         // Return subquery with alias
                         exit(CopyStr(SQLStatement, StartPos, SubQueryLen) + ' AS ' + CopyStr(SubStr, i, AliasEnd + 1));
-                    end;
                 end;
             end;
         end;
@@ -922,7 +905,6 @@ codeunit 50923 "LRQ SQL Parser"
     var
         UpperSQL: Text;
         AsPos: Integer;
-        QuoteStart: Integer;
         QuoteEnd: Integer;
         SubStr: Text;
     begin
@@ -946,8 +928,6 @@ codeunit 50923 "LRQ SQL Parser"
 
     local procedure ExtractFlowFieldNameFromAlias(Alias: Text): Text
     var
-        Parts: List of [Text];
-        Part: Text;
         DollarPos: Integer;
     begin
         // Alias format: SUB$TableAlias$FieldName
@@ -983,7 +963,7 @@ codeunit 50923 "LRQ SQL Parser"
         exit(ExtractTableNameFromFullPath(TableName));
     end;
 
-    local procedure ExtractSubQueryWhereFields(OuterApplySql: Text; SubQueryTable: Text; var EqualityFields: Text; var InequalityFields: Text)
+    local procedure ExtractSubQueryWhereFields(OuterApplySql: Text; var EqualityFields: Text; var InequalityFields: Text)
     var
         Alias: Text;
     begin
@@ -997,7 +977,6 @@ codeunit 50923 "LRQ SQL Parser"
         UpperSQL: Text;
         FromPos: Integer;
         AsPos: Integer;
-        WithPos: Integer;
         SubStr: Text;
         QuoteStart: Integer;
         QuoteEnd: Integer;
@@ -1032,15 +1011,9 @@ codeunit 50923 "LRQ SQL Parser"
     procedure PrettifySQL(SQLStatement: Text): Text
     var
         Result: Text;
-        IndentLevel: Integer;
         CR: Text[2];
-        Tab: Text[4];
-        UpperSQL: Text;
-        i: Integer;
     begin
         CR := GetCRLF();
-        Tab := '    ';
-        IndentLevel := 0;
 
         Result := SQLStatement;
 
@@ -1114,10 +1087,9 @@ codeunit 50923 "LRQ SQL Parser"
                 UpperText := UpperCase(Text);
                 // Search from position after the keyword we just processed (plus 2 for CRLF we inserted)
                 SearchStartPos := Pos + StrLen(Keyword) + 2;
-            end else begin
+            end else
                 // No break needed, search from position after the keyword
                 SearchStartPos := Pos + StrLen(Keyword);
-            end;
 
             // Find next occurrence
             if SearchStartPos <= StrLen(UpperText) then begin
@@ -1194,8 +1166,9 @@ codeunit 50923 "LRQ SQL Parser"
             // Increase indent after SELECT, FROM with subquery start
             if StrPos(UpperLine, 'OUTER APPLY (') > 0 then
                 IndentLevel += 1
-            else if StrPos(UpperLine, 'CROSS APPLY (') > 0 then
-                IndentLevel += 1;
+            else
+                if StrPos(UpperLine, 'CROSS APPLY (') > 0 then
+                    IndentLevel += 1;
         end;
 
         exit(Result);
@@ -1204,7 +1177,6 @@ codeunit 50923 "LRQ SQL Parser"
     local procedure SplitIntoLines(Text: Text; var Lines: List of [Text])
     var
         CR: Text[2];
-        LF: Text[1];
         Line: Text;
         Pos: Integer;
     begin
@@ -1236,38 +1208,13 @@ codeunit 50923 "LRQ SQL Parser"
             exit(0);
 
         FieldCount := 1;
-        for i := 1 to StrLen(FieldList) do begin
+        for i := 1 to StrLen(FieldList) do
             if FieldList[i] = ',' then
                 FieldCount += 1;
-        end;
         exit(FieldCount);
     end;
 
-    local procedure MatchTableName(var LRQEntry: Record "LRQ Entry")
-    var
-        AllObj: Record AllObjWithCaption;
-        NormalizedSQLName: Text;
-        NormalizedALName: Text;
-    begin
-        if LRQEntry."SQL Table Name" = '' then
-            exit;
-
-        NormalizedSQLName := NormalizeNameForComparison(LRQEntry."SQL Table Name");
-
-        AllObj.Reset();
-        AllObj.SetRange("Object Type", AllObj."Object Type"::Table);
-        if AllObj.FindSet() then
-            repeat
-                NormalizedALName := NormalizeNameForComparison(AllObj."Object Name");
-                if NormalizedSQLName = NormalizedALName then begin
-                    LRQEntry."Table ID" := AllObj."Object ID";
-                    LRQEntry."AL Table Name" := AllObj."Object Name";
-                    exit;
-                end;
-            until AllObj.Next() = 0;
-    end;
-
-    local procedure MatchFlowFieldTableName(var LRQFlowFieldEntry: Record "LRQ FlowField Entry")
+    local procedure MatchFlowFieldTableName(var LRQFlowFieldEntry: Record "DTC LRQ FlowField Entry")
     var
         AllObj: Record AllObjWithCaption;
         NormalizedSQLName: Text;

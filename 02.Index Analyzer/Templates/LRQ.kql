@@ -1,7 +1,6 @@
-let ObjectNameAndClientLRQCount= (
-traces
-| where timestamp > ago(30d) //Can be changed
-| where customDimensions.eventId == "RT0005"
+let ObjectNameAndClientLRQCount= ( 
+bctraces
+| where customDimensions.eventId == "RT0005" 
 | extend sqlStatement = tostring(customDimensions.sqlStatement)
 | extend tablename = replace_string(tostring( extract_all("\"SQLDATABASE\"\\.dbo\\.\"CURRENTCOMPANY(\\$.+?)\\$\\S+?\"", sqlStatement)[0]),"$","")
 | where tablename != "" //no blank tablename
@@ -17,31 +16,31 @@ traces
     , sqlStatement matches regex "(.*)WITH", "SELECT"
     , sqlStatement startswith "CREATE TABLE", "CREATE_TABLE"
     , sqlStatement startswith "ALTER TABLE", "ALTER_TABLE"
-    , sqlStatement startswith "exec sp_rename", "RENAME_TABLE"
+    , sqlStatement startswith "exec sp_rename", "RENAME_TABLE" 
     , sqlStatement matches regex "(.*)DROP TABLE", "DROP_TABLE"
     , sqlStatement startswith "SET LOCK_TIMEOUT", "SET_LOCK_TIMEOUT"
     , sqlStatement has "sp_getapplock", "GET_APP_LOCK"
     , "UNKNOWN"
 )
 | where operationType == "SELECT" //Only Select
-| extend executionTimeInMS = toreal(totimespan(customDimensions.executionTime))/10000
+| extend executionTimeInMS = toreal(totimespan(customDimensions.executionTime))/10000  
 , withUPDLOCK = iff(customDimensions.sqlStatement has 'UPDLOCK','Yes', 'No')
-, numberOfFlowFields = countof(sqlStatement, "OUTER APPLY")
+, numberOfFlowFields = countof(sqlStatement, "OUTER APPLY") 
 , isolationLevel = tostring(case(
     sqlStatement has 'WITH(UPDLOCK)', 'UPDLOCK'
   , sqlStatement has 'WITH(READUNCOMMITTED)', 'ReadUncommitted'
-  , sqlStatement has 'WITH(READCOMMITTED)', 'ReadCommitted'
-  , sqlStatement has 'WITH(REPEATABLEREAD)', 'RepeatableRead'
+  , sqlStatement has 'WITH(READCOMMITTED)', 'ReadCommitted' 
+  , sqlStatement has 'WITH(REPEATABLEREAD)', 'RepeatableRead' 
   , 'Default'
 ))
-| project timestamp,
-    ["Duration"] = executionTimeInMS,
-    ["FlowFields"] = numberOfFlowFields,
+| project timestamp, 
+    ["Duration"] = executionTimeInMS, 
+    ["FlowFields"] = numberOfFlowFields, 
     ["with UPDLOCK"] = withUPDLOCK,
     ["Isolation Level"] = isolationLevel,
     ["SQL Statement"] = sqlStatement,
     tablename
-| summarize count(), avgDuration = round(avg(Duration),0), totalDuration =  round(sum(Duration),0)
+| summarize count(), avgDuration = round(avg(Duration),0), totalDuration =  round(sum(Duration),0) 
     by ['SQL Statement'], tablename, ['Isolation Level'], FlowFields
 );
 ObjectNameAndClientLRQCount
@@ -65,11 +64,11 @@ ObjectNameAndClientLRQCount
 // Aggregate back
 | summarize equalityFields = make_set_if(fieldName, isEquality),
     inequalityFields = make_set_if(fieldName, not(isEquality))
-    by
+    by 
     ['SQL Statement'], FlowFields, tablename, ['Isolation Level']
     , count_, avgDuration, totalDuration, Percentage
 | where count_ > 9 //More than at least 9 occurrance
-| sort by totalDuration desc
+| sort by totalDuration desc 
 // Complete KQL SQL Prettifier for BC Queries
 | extend PrettifiedSQL = replace_strings(
     ['SQL Statement'],

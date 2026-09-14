@@ -1,10 +1,10 @@
 namespace DefaultNamespace;
 
-page 50913 "Index Details"
+page 50913 "DTC Index Details"
 {
     PageType = List;
     ApplicationArea = All;
-    SourceTable = "Index Detail";
+    SourceTable = "DTC Index Detail";
     SourceTableView = sorting("Index Entry No.", "Selectivity Type", "Field No.", Bucket);
     Caption = 'Index Details - Bucket Histogram';
     Editable = false;
@@ -40,12 +40,12 @@ page 50913 "Index Details"
                     ToolTip = 'Specifies whether this is field-level or index-level analysis.';
                 }
             }
-            part(Chart; "Index Detail Chart")
+            part(Chart; "DTC Index Detail Chart")
             {
                 ApplicationArea = All;
                 Caption = 'Bucket Distribution';
             }
-            part(GroupChart; "Index Group Distribution Chart")
+            part(GroupChart; "DTC Index Group Distr. Chart")
             {
                 ApplicationArea = All;
                 Caption = 'Group Distribution';
@@ -84,7 +84,7 @@ page 50913 "Index Details"
         FieldNameHeader: Text[250];
         SelectivityTypeHeader: Text[50];
         IndexEntryNoVar: Integer;
-        SelectivityTypeVar: Enum "Selectivity Type";
+        SelectivityTypeVar: Enum "DTC Selectivity Type";
         FieldNoVar: Integer;
 
     trigger OnOpenPage()
@@ -93,7 +93,7 @@ page 50913 "Index Details"
         CurrPage.GroupChart.Page.SetIndexDetail(IndexEntryNoVar, SelectivityTypeVar, FieldNoVar);
     end;
 
-    procedure SetEntry(IndexSelectivity: Record "Index Selectivity")
+    procedure SetEntry(IndexSelectivity: Record "DTC Index Selectivity")
     begin
         TableNameHeader := IndexSelectivity."Table Name";
         FieldNameHeader := IndexSelectivity."Field Name";

@@ -1,0 +1,102 @@
+name: Table337
+description: Test recording
+telemetryId: aa3c1e2e-d8a8-4180-9dd7-d3aaf13fccbc
+start:
+  profile: BUSINESS MANAGER EVALUATION
+steps:
+  - type: navigate
+    target:
+      - page: Table Information
+    description: Navigate to Table Information
+  - type: page-shown
+    source:
+      page: Table Information
+    modal: false
+    runtimeId: b6h
+    description: Page <caption>Table Information</caption> was shown.
+  - type: filter
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+    operation: add
+    column:
+      field: Table No.
+      scope: filter
+    description: Add filter for <caption>Table No.</caption> on <caption>Table
+      Information</caption>
+  - type: input
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+      - scope: filter
+        field: Table No.
+    value: "337"
+    description: Input <value>337</value> into <caption>Table No.</caption>
+  - type: filter
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+    operation: add
+    column:
+      field: Company Name
+      scope: filter
+    description: Add filter for <caption>Company Name</caption> on <caption>Table
+      Information</caption>
+  - type: input
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+      - scope: filter
+        field: Company Name
+    value: CRONUS IT
+    description: Input <value>CRONUS IT</value> into <caption>Company Name</caption>
+  - type: invoke
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+      - action: Control_Microsoft_Excel_By_Server
+    invokeType: SendToExcelServer
+    description: Invoke SendToExcelServer on <caption>Open in Excel</caption>
+  - type: invoke
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+      - repeater: General
+      - field: Table No.
+    invokeType: DrillDown
+    description: Invoke DrillDown on <caption>Table No.</caption>
+  - type: page-shown
+    source:
+      page: Table Information Card
+    modal: false
+    runtimeId: b98
+    description: Page <caption>Table Data Management - Card</caption> was shown.
+  - type: invoke
+    target:
+      - page: Table Information Card
+        runtimeRef: b98
+      - part: IndexLines
+      - page: Indexes List Part
+      - action: Control_Microsoft_Excel_By_Server
+    invokeType: SendToExcelServer
+    description: Invoke SendToExcelServer on <caption>Open in Excel</caption>
+  - type: close-page
+    target:
+      - page: Table Information Card
+        runtimeRef: b98
+    description: Close page <caption>Table Data Management - Card</caption>
+  - type: page-closed
+    source:
+      page: Table Information Card
+    runtimeId: b98
+    description: Page <caption>Table Data Management - Card</caption> was closed.
+  - type: close-page
+    target:
+      - page: Table Information
+        runtimeRef: b6h
+    description: Close page <caption>Table Information</caption>
+  - type: page-closed
+    source:
+      page: Table Information
+    runtimeId: b6h
+    description: Page <caption>Table Information</caption> was closed.

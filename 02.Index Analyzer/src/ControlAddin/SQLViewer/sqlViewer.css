@@ -1,0 +1,43 @@
+/* SQL Viewer control add-in styles. Colors tuned to work on the BC light theme. */
+.dtc-sql-viewer {
+    margin: 0;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    white-space: pre;
+    tab-size: 4;
+    font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1f1f1f;
+    background: #fbfbfb;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.dtc-sql-kw { color: #0000c0; font-weight: 600; }      /* keywords: SELECT, FROM, WHERE */
+.dtc-sql-fn { color: #7b1fa2; font-weight: 600; }      /* functions: SUM, COUNT */
+.dtc-sql-str { color: #a31515; }                        /* 'string literals' */
+.dtc-sql-id { color: #098658; }                         /* "quoted identifiers" / [brackets] */
+.dtc-sql-num { color: #098658; }                        /* numbers */
+.dtc-sql-param { color: #b8860b; font-style: italic; }  /* @parameters */
+.dtc-sql-op { color: #555555; }                         /* operators / punctuation */
+.dtc-sql-cmt { color: #6a9955; font-style: italic; }    /* comments */
+
+@media (prefers-color-scheme: dark) {
+    .dtc-sql-viewer {
+        color: #d4d4d4;
+        background: #1e1e1e;
+        border-color: #3a3a3a;
+    }
+    .dtc-sql-kw { color: #569cd6; }
+    .dtc-sql-fn { color: #dcdcaa; }
+    .dtc-sql-str { color: #ce9178; }
+    .dtc-sql-id { color: #4ec9b0; }
+    .dtc-sql-num { color: #b5cea8; }
+    .dtc-sql-param { color: #d7ba7d; }
+    .dtc-sql-op { color: #cccccc; }
+    .dtc-sql-cmt { color: #6a9955; }
+}

@@ -2,7 +2,7 @@ namespace DefaultNamespace;
 
 using System.Reflection;
 
-table 50900 "VSIFT Entry"
+table 50900 "DTC VSIFT Entry"
 {
     DataClassification = SystemMetadata;
     Caption = 'VSIFT Entry';

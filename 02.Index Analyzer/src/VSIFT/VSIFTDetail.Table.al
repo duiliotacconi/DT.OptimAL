@@ -1,6 +1,6 @@
 namespace DefaultNamespace;
 
-table 50901 "VSIFT Detail"
+table 50901 "DTC VSIFT Detail"
 {
     DataClassification = SystemMetadata;
     Caption = 'VSIFT Detail';
@@ -11,7 +11,7 @@ table 50901 "VSIFT Detail"
         {
             DataClassification = SystemMetadata;
             Caption = 'VSIFT Entry No.';
-            TableRelation = "VSIFT Entry"."Entry No.";
+            TableRelation = "DTC VSIFT Entry"."Entry No.";
         }
         field(2; Bucket; Integer)
         {

@@ -2,7 +2,7 @@ namespace DefaultNamespace;
 
 using System.Reflection;
 
-table 50910 "Index Entry"
+table 50910 "DTC Index Entry"
 {
     DataClassification = SystemMetadata;
     Caption = 'Index Entry';
@@ -92,11 +92,91 @@ table 50910 "Index Entry"
             DataClassification = SystemMetadata;
             Caption = 'Total Record Count';
         }
-        field(30; "Last Updated"; DateTime)
+        field(21; "Database Start Time"; Text[50])
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Database Start Time';
+        }
+        field(30; "Last Updated"; Text[50])
         {
             DataClassification = SystemMetadata;
             Caption = 'Last Updated';
             Editable = false;
+        }
+        field(40; "Fragmentation %"; Decimal)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Fragmentation %';
+        }
+        field(41; "User Seeks"; BigInteger)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Number of User Seeks';
+        }
+        field(42; "User Scans"; BigInteger)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Number of User Scans';
+        }
+        field(43; "User Lookups"; BigInteger)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Number of User Lookups';
+        }
+        field(44; "User Updates"; BigInteger)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Number of User Updates';
+        }
+        field(45; "Last Seek"; Text[50])
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Last User Seek';
+        }
+        field(46; "Last Scan"; Text[50])
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Last User Scan';
+        }
+        field(47; "Last Lookup"; Text[50])
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Last User Lookup';
+        }
+        field(48; "Last Update"; Text[50])
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Last User Update';
+        }
+        field(50; "Enabled in Database"; Boolean)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Enabled in Database';
+        }
+        field(51; "AL Defined"; Boolean)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'AL Defined';
+        }
+        field(52; "Index Size (kB)"; Decimal)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Index Size (kB)';
+        }
+        field(53; "Statistics Updated At"; Text[50])
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Statistics Updated At';
+        }
+        field(54; Paired; Boolean)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Paired';
+        }
+        field(55; "Created From Pairings"; Boolean)
+        {
+            DataClassification = SystemMetadata;
+            Caption = 'Created From Pairings';
         }
     }
 
@@ -113,11 +193,11 @@ table 50910 "Index Entry"
 
     trigger OnInsert()
     begin
-        "Last Updated" := CurrentDateTime();
+        "Last Updated" := Format(CurrentDateTime());
     end;
 
     trigger OnModify()
     begin
-        "Last Updated" := CurrentDateTime();
+        "Last Updated" := Format(CurrentDateTime());
     end;
 }

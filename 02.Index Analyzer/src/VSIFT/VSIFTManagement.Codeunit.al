@@ -2,7 +2,7 @@ namespace DefaultNamespace;
 
 using System.Reflection;
 
-codeunit 50900 "VSIFT Management"
+codeunit 50900 "DTC VSIFT Management"
 {
     procedure CollectVSIFTData()
     begin
@@ -11,13 +11,13 @@ codeunit 50900 "VSIFT Management"
 
     procedure CollectVSIFTDataFromTable(StartFromTableID: Integer; ClearExisting: Boolean)
     var
-        VSIFTEntry: Record "VSIFT Entry";
-        VSIFTDetail: Record "VSIFT Detail";
+        VSIFTEntry: Record "DTC VSIFT Entry";
+        VSIFTDetail: Record "DTC VSIFT Detail";
         TableMetadata: Record "Table Metadata";
         KeyMetadata: Record "Key";
         AllObj: Record AllObjWithCaption;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Processing VSIFT Data...\Table: #1######## #2##############################\Key Index: #3#### Fields: #4##############################';
+        ProgressMsg: Label 'Processing VSIFT Data...\Table: #1######## #2##############################\Key Index: #3#### Fields: #4##############################', Comment = '#1 = Table ID, #2 = Table Name, #3 = Key Index, #4 = Key Fields';
         LastTableID: Integer;
     begin
         // Clear existing data if requested
@@ -54,7 +54,7 @@ codeunit 50900 "VSIFT Management"
                 AllObj.Reset();
                 AllObj.SetRange("Object Type", AllObj."Object Type"::Table);
                 AllObj.SetRange("Object ID", TableMetadata.ID);
-                if AllObj.FindFirst() then begin
+                if AllObj.FindFirst() then
                     // Check if we can access the table before processing
                     if CanAccessTable(TableMetadata.ID) then begin
                         // Find keys with SIFT
@@ -79,7 +79,6 @@ codeunit 50900 "VSIFT Management"
                             LastTableID := TableMetadata.ID;
                         end;
                     end;
-                end;
             until TableMetadata.Next() = 0;
 
         ProgressDialog.Close();
@@ -87,7 +86,7 @@ codeunit 50900 "VSIFT Management"
 
     procedure GetLastProcessedTableID(): Integer
     var
-        VSIFTEntry: Record "VSIFT Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
     begin
         VSIFTEntry.Reset();
         if VSIFTEntry.FindLast() then
@@ -97,19 +96,19 @@ codeunit 50900 "VSIFT Management"
 
     procedure HasExistingData(): Boolean
     var
-        VSIFTEntry: Record "VSIFT Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
     begin
         exit(not VSIFTEntry.IsEmpty());
     end;
 
     procedure CollectVSIFTDataForTable(TableID: Integer)
     var
-        VSIFTEntry: Record "VSIFT Entry";
-        VSIFTDetail: Record "VSIFT Detail";
+        VSIFTEntry: Record "DTC VSIFT Entry";
+        VSIFTDetail: Record "DTC VSIFT Detail";
         KeyMetadata: Record "Key";
         AllObj: Record AllObjWithCaption;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Processing VSIFT Data for Table #1########...\Key Index: #2#### Fields: #3##############################';
+        ProgressMsg: Label 'Processing VSIFT Data for Table #1########...\Key Index: #2#### Fields: #3##############################', Comment = '#1 = Table ID, #2 = Key Index, #3 = Key Fields';
     begin
         if TableID = 0 then
             exit;
@@ -159,7 +158,6 @@ codeunit 50900 "VSIFT Management"
 
     local procedure CanAccessTable(TableID: Integer): Boolean
     var
-        RecRef: RecordRef;
         RecordCount: Integer;
     begin
         // Try to open the table and get record count to verify access
@@ -178,7 +176,7 @@ codeunit 50900 "VSIFT Management"
         RecRef.Close();
     end;
 
-    local procedure CreateVSIFTEntry(var VSIFTEntry: Record "VSIFT Entry"; KeyMetadata: Record "Key"; TableName: Text[250])
+    local procedure CreateVSIFTEntry(var VSIFTEntry: Record "DTC VSIFT Entry"; KeyMetadata: Record "Key"; TableName: Text[250])
     begin
         Clear(VSIFTEntry);
         VSIFTEntry.Init();
@@ -196,11 +194,10 @@ codeunit 50900 "VSIFT Management"
         VSIFTEntry.Insert(true);
     end;
 
-    local procedure CreateVSIFTDetails(var VSIFTEntry: Record "VSIFT Entry"; KeyMetadata: Record "Key")
+    local procedure CreateVSIFTDetails(var VSIFTEntry: Record "DTC VSIFT Entry"; KeyMetadata: Record "Key")
     var
-        VSIFTDetail: Record "VSIFT Detail";
+        VSIFTDetail: Record "DTC VSIFT Detail";
         RecRef: RecordRef;
-        FieldRef: FieldRef;
         KeyFieldList: List of [Integer];
         GroupDict: Dictionary of [Text, Integer];
         BucketDict: Dictionary of [Integer, Integer];
@@ -214,7 +211,7 @@ codeunit 50900 "VSIFT Management"
         GetFieldNumbersFromNames(KeyMetadata.TableNo, KeyMetadata."Key", KeyFieldList);
 
         RecRef.Open(KeyMetadata.TableNo);
-        if RecRef.FindSet() then begin
+        if RecRef.FindSet() then
             repeat
                 // Build the group key from key fields
                 GroupKey := BuildGroupKey(RecRef, KeyFieldList);
@@ -225,7 +222,6 @@ codeunit 50900 "VSIFT Management"
                 else
                     GroupDict.Add(GroupKey, 1);
             until RecRef.Next() = 0;
-        end;
         RecRef.Close();
 
         // Now create bucket distribution - how many groups have each record count
@@ -251,7 +247,7 @@ codeunit 50900 "VSIFT Management"
         end;
     end;
 
-    local procedure CalculateVSIFTStatistics(var VSIFTEntry: Record "VSIFT Entry"; KeyMetadata: Record "Key")
+    local procedure CalculateVSIFTStatistics(var VSIFTEntry: Record "DTC VSIFT Entry"; KeyMetadata: Record "Key")
     var
         RecRef: RecordRef;
         FieldRef: FieldRef;
@@ -263,10 +259,9 @@ codeunit 50900 "VSIFT Management"
         SumAmount: Decimal;
         MinValue, MaxValue : Integer;
         TotalSum: Decimal;
-        TotalGroups, TotalRecordCount : Integer;
+        TotalGroups: Integer;
         IsFirstGroup: Boolean;
         GroupKeys: List of [Text];
-        GroupValue: Decimal;
         GroupCount: Integer;
     begin
         RecRef.Open(KeyMetadata.TableNo);
@@ -276,19 +271,18 @@ codeunit 50900 "VSIFT Management"
         ParseFieldList(KeyMetadata.SumIndexFields, SIFTFieldList);
 
         // Group records and calculate per-group statistics
-        if RecRef.FindSet() then begin
+        if RecRef.FindSet() then
             repeat
                 // Build the group key from key fields
                 GroupKey := BuildGroupKey(RecRef, KeyFieldList);
 
                 // Accumulate SIFT field values for this group
                 SumAmount := 0;
-                if SIFTFieldList.Count > 0 then begin
+                if SIFTFieldList.Count > 0 then
                     if RecRef.FieldExist(SIFTFieldList.Get(1)) then begin
                         FieldRef := RecRef.Field(SIFTFieldList.Get(1));
                         SumAmount := GetDecimalValue(FieldRef);
                     end;
-                end;
 
                 // Update the dictionary with accumulated values
                 if GroupDict.ContainsKey(GroupKey) then begin
@@ -299,7 +293,6 @@ codeunit 50900 "VSIFT Management"
                     CountDict.Add(GroupKey, 1);
                 end;
             until RecRef.Next() = 0;
-        end;
         RecRef.Close();
 
         // Calculate statistics based on the VSIFT group values (bucket counts)
@@ -332,34 +325,6 @@ codeunit 50900 "VSIFT Management"
         VSIFTEntry."Max Group Value" := MaxValue;
         if TotalGroups > 0 then
             VSIFTEntry."Avg Group Value" := TotalSum / TotalGroups;
-    end;
-
-    local procedure GetFieldNamesFromNumbers(TableNo: Integer; FieldList: Text): Text[250]
-    var
-        FieldRef: FieldRef;
-        RecRef: RecordRef;
-        FieldNoList: List of [Integer];
-        FieldNames: Text;
-        FieldNo: Integer;
-    begin
-        // Both Key and SumIndexFields contain field numbers that need to be converted to names
-        if FieldList = '' then
-            exit('');
-
-        RecRef.Open(TableNo);
-        ParseFieldList(FieldList, FieldNoList);
-
-        foreach FieldNo in FieldNoList do begin
-            if RecRef.FieldExist(FieldNo) then begin
-                FieldRef := RecRef.Field(FieldNo);
-                if FieldNames <> '' then
-                    FieldNames += ', ';
-                FieldNames += FieldRef.Name;
-            end;
-        end;
-
-        RecRef.Close();
-        exit(CopyStr(FieldNames, 1, 250));
     end;
 
     local procedure ParseFieldList(FieldList: Text; var FieldNoList: List of [Integer])
@@ -449,14 +414,13 @@ codeunit 50900 "VSIFT Management"
         GroupKey: Text;
     begin
         GroupKey := '';
-        foreach FieldNo in KeyFieldList do begin
+        foreach FieldNo in KeyFieldList do
             if RecRef.FieldExist(FieldNo) then begin
                 FieldRef := RecRef.Field(FieldNo);
                 if GroupKey <> '' then
                     GroupKey += '|';
                 GroupKey += Format(FieldRef.Value);
             end;
-        end;
         exit(GroupKey);
     end;
 
@@ -469,19 +433,18 @@ codeunit 50900 "VSIFT Management"
             exit(0);
 
         FieldCount := 1;
-        for i := 1 to StrLen(KeyFields) do begin
+        for i := 1 to StrLen(KeyFields) do
             if KeyFields[i] = ',' then
                 FieldCount += 1;
-        end;
         exit(FieldCount);
     end;
 
     /// <summary>
     /// Calculates selectivity for a single VSIFT entry.
     /// </summary>
-    procedure CalculateSelectivity(var VSIFTEntry: Record "VSIFT Entry")
+    procedure CalculateSelectivity(var VSIFTEntry: Record "DTC VSIFT Entry")
     var
-        IndexSelectivity: Record "Index Selectivity";
+        IndexSelectivity: Record "DTC Index Selectivity";
         RecRef: RecordRef;
         FieldRef: FieldRef;
         KeyFieldList: List of [Integer];
@@ -495,7 +458,7 @@ codeunit 50900 "VSIFT Management"
         TotalRows: Integer;
         ProcessedRows: Integer;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating VSIFT Selectivity...\Phase: #1##############################\Progress: #2#### / #3####';
+        ProgressMsg: Label 'Calculating VSIFT Selectivity...\Phase: #1##############################\Progress: #2#### / #3####', Comment = '#1 = Phase description, #2 = Current progress, #3 = Total rows';
     begin
         // Delete existing selectivity records for this VSIFT entry only
         IndexSelectivity.SetRange("Source Type", IndexSelectivity."Source Type"::VSIFT);
@@ -521,14 +484,13 @@ codeunit 50900 "VSIFT Management"
         end;
 
         // Initialize dictionaries for all fields
-        foreach FieldNo in KeyFieldList do begin
+        foreach FieldNo in KeyFieldList do
             if RecRef.FieldExist(FieldNo) then begin
                 FieldRef := RecRef.Field(FieldNo);
                 AllFieldNames.Add(FieldNo, FieldRef.Name);
                 Clear(TempFieldDict);
                 FieldDistinctValues.Add(FieldNo, TempFieldDict);
             end;
-        end;
 
         // SINGLE PASS: Collect ALL field values and composite key at once
         ProgressDialog.Update(1, 'Collecting field values...');
@@ -542,7 +504,7 @@ codeunit 50900 "VSIFT Management"
 
                 // Build composite key
                 CompositeKeyValue := '';
-                foreach FieldNo in KeyFieldList do begin
+                foreach FieldNo in KeyFieldList do
                     if RecRef.FieldExist(FieldNo) then begin
                         FieldRef := RecRef.Field(FieldNo);
                         FieldValue := Format(FieldRef.Value);
@@ -560,7 +522,6 @@ codeunit 50900 "VSIFT Management"
                             CompositeKeyValue += '|';
                         CompositeKeyValue += FieldValue;
                     end;
-                end;
 
                 // Track composite key
                 if not CompositeKeyDict.ContainsKey(CompositeKeyValue) then
@@ -585,14 +546,14 @@ codeunit 50900 "VSIFT Management"
     end;
 
     local procedure CreateSelectivityRecordsForVSIFT(
-        VSIFTEntry: Record "VSIFT Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
         KeyFieldList: List of [Integer];
         AllFieldNames: Dictionary of [Integer, Text];
         FieldDistinctValues: Dictionary of [Integer, Dictionary of [Text, Integer]];
         CompositeKeyDict: Dictionary of [Text, Integer];
         TotalRows: Integer)
     var
-        IndexSelectivity: Record "Index Selectivity";
+        IndexSelectivity: Record "DTC Index Selectivity";
         TempFieldDict: Dictionary of [Text, Integer];
         FieldNo: Integer;
         FieldPosition: Integer;
@@ -601,7 +562,7 @@ codeunit 50900 "VSIFT Management"
         DensityValue: Decimal;
     begin
         // Create Individual Field records
-        foreach FieldNo in KeyFieldList do begin
+        foreach FieldNo in KeyFieldList do
             if FieldDistinctValues.ContainsKey(FieldNo) then begin
                 FieldPosition += 1;
                 TempFieldDict := FieldDistinctValues.Get(FieldNo);
@@ -636,7 +597,6 @@ codeunit 50900 "VSIFT Management"
                 IndexSelectivity.Density := DensityValue;
                 IndexSelectivity.Insert(true);
             end;
-        end;
 
         // Create Composite Key record
         DistinctCount := CompositeKeyDict.Count;
@@ -672,10 +632,10 @@ codeunit 50900 "VSIFT Management"
     /// </summary>
     procedure CalculateSelectivityForTable(TableID: Integer): Integer
     var
-        VSIFTEntry: Record "VSIFT Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
         ProcessedCount: Integer;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating VSIFT Selectivity for Table...\Progress: #1#### / #2####';
+        ProgressMsg: Label 'Calculating VSIFT Selectivity for Table...\Progress: #1#### / #2####', Comment = '#1 = Current progress, #2 = Total count';
         TotalCount: Integer;
     begin
         VSIFTEntry.SetRange("Table ID", TableID);
@@ -702,13 +662,13 @@ codeunit 50900 "VSIFT Management"
     /// </summary>
     procedure CalculateSelectivityForAll(): Integer
     var
-        VSIFTEntry: Record "VSIFT Entry";
+        VSIFTEntry: Record "DTC VSIFT Entry";
         TableIDList: List of [Integer];
         TableID: Integer;
         ProcessedTableCount: Integer;
         TableCount: Integer;
         ProgressDialog: Dialog;
-        ProgressMsg: Label 'Calculating VSIFT Selectivity for All Tables...\Table: #1#### / #2#### - #3##################';
+        ProgressMsg: Label 'Calculating VSIFT Selectivity for All Tables...\Table: #1#### / #2#### - #3##################', Comment = '#1 = Current table count, #2 = Total table count, #3 = Table Name';
     begin
         // Collect distinct Table IDs
         VSIFTEntry.SetFilter("Total Record Count", '>1');
